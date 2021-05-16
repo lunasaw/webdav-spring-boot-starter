@@ -18,9 +18,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author luna@mac
- * @className WebDavConfig.java
- * @description TODO
- * @createTime 2021年03月12日 09:24:00
+ * 2021年03月12日 09:24:00
  */
 @ConfigurationProperties(prefix = "luna.webdav")
 public class WebDavConfig {
