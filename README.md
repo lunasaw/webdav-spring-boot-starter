@@ -7,29 +7,29 @@ Httpd操作封装,包括文件上传下载，检测是否存在等操作集成sp
 ```xml
 
 <dependencies>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
 
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-configuration-processor</artifactId>
-        <optional>true</optional>
-    </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
 
-    <dependency>
-        <groupId>org.apache.jackrabbit</groupId>
-        <artifactId>jackrabbit-webdav</artifactId>
-        <version>${jackrabbit-webdav.version}</version>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.jackrabbit</groupId>
+            <artifactId>jackrabbit-webdav</artifactId>
+            <version>${jackrabbit-webdav.version}</version>
+        </dependency>
 
-    <dependency>
-        <groupId>com.github.czy1024</groupId>
-        <artifactId>luna-common</artifactId>
-        <version>1.1.4</version>
-    </dependency>
-</dependencies>
+        <dependency>
+            <groupId>io.github.lunasaw</groupId>
+            <artifactId>luna-common</artifactId>
+            <version>1.3.2</version>
+        </dependency>
+    </dependencies>
 ```
 
 ## webdav-spring-boot-starter使用示例：
