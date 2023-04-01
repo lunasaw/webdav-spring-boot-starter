@@ -1,6 +1,6 @@
 # luna-webdav
 
-Httpd操作封装,包括文件上传下载，检测是否存在等操作集成springboot starter
+提前安装httpd服务器设置指定目录，Httpd操作封装,包括文件上传下载，检测是否存在等操作集成springboot starter
 
 ## Maven依赖：
 
