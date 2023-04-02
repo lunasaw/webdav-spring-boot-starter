@@ -6,7 +6,7 @@
 
     <groupId>io.github.lunasaw</groupId>
     <artifactId>webdav-spring-boot-starter</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.1-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -14,10 +14,11 @@
         <spring-boot.version>2.2.2.RELEASE</spring-boot.version>
         <jackrabbit-webdav.version>2.21.15</jackrabbit-webdav.version>
         <luna-common.version>2.3.4</luna-common.version>
+        <github.username>lunasaw</github.username>
     </properties>
 
     <name>webdav-spring-boot-starter</name>
-    <url>https://github.com/lunasaw/webdav-spring-boot-starter</url>
+    <url>https://github.com/lunasaw/${project.name}</url>
     <description>Httpd操作封装,包括文件上传下载，检测是否存在等操作集成springboot starter</description>
 
     <developers>
@@ -72,9 +73,9 @@
     </dependencies>
 
     <scm>
-        <url>https://github.com/lunasaw/webdav-spring-boot-starter</url>
-        <connection>scm:git:https://github.com/lunasaw/webdav-spring-boot-starter.git</connection>
-        <developerConnection>scm:git:https://github.com/lunasaw/webdav-spring-boot-starter</developerConnection>
+        <url>https://github.com/${github.username}/${project.name}</url>
+        <connection>scm:git:https://github.com/${github.username}/${project.name}.git</connection>
+        <developerConnection>scm:git:https://github.com/${github.username}/${project.name}</developerConnection>
     </scm>
 
     <distributionManagement>
@@ -88,12 +89,12 @@
                 <repository>
                     <id>github_auth</id>
                     <name>GitHub OWNER Apache Maven Packages</name>
-                    <url>https://maven.pkg.github.com/lunasaw/luna-fans-api</url>
+                    <url>https://maven.pkg.github.com/${github.username}/${project.name}</url>
                 </repository>
                 <snapshotRepository>
                     <id>github_auth</id>
                     <name>GitHub OWNER Apache Maven Packages</name>
-                    <url>https://maven.pkg.github.com/lunasaw/luna-fans-api</url>
+                    <url>https://maven.pkg.github.com/${github.username}/${project.name}</url>
                 </snapshotRepository>
             </distributionManagement>
             <repositories>
@@ -101,7 +102,7 @@
                     <!-- id需要与上面的server对应的id匹配 -->
                     <id>github_auth</id>
                     <name>GitHub OWNER Apache Maven Packages</name>
-                    <url>https://maven.pkg.github.com/lunasaw/luna-fans-api</url>
+                    <url>https://maven.pkg.github.com/${github.username}/${project.name}</url>
                     <snapshots>
                         <enabled>true</enabled>
                     </snapshots>
