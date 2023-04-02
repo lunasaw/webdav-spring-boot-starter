@@ -1,13 +1,15 @@
 package io.github.lunasaw.webdav;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.Arrays;
+import java.io.*;
+import java.util.Collection;
+import java.util.List;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
+import com.luna.common.constant.Constant;
 import com.luna.common.constant.StrPoolConstant;
-import io.github.lunasaw.webdav.properties.WebDavConfig;
-import org.apache.commons.lang3.StringUtils;
+import com.luna.common.io.IoUtil;
+import com.luna.common.utils.Assert;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpDelete;
@@ -21,18 +23,18 @@ import org.apache.jackrabbit.webdav.client.methods.HttpPropfind;
 
 import com.luna.common.file.FileTools;
 import com.luna.common.net.HttpUtils;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 /**
  * @author luna@mac
  * 2021年03月12日 09:23:00
  */
-@Service
-public class WebDavUtils {
+public class WebDavUtils implements InitializingBean {
 
     @Autowired
-    private WebDavConfig webDavConfig;
+    private WebDavSupport webDavSupport;
 
     /**
      * 上传文件 路径不存在则创建
@@ -41,13 +43,13 @@ public class WebDavUtils {
      * @param fis 文件流
      * @return
      */
-    public boolean upload(String url, FileInputStream fis) {
+    public boolean upload(String url, InputStream fis) {
         try {
             HttpPut put = new HttpPut(url);
             InputStreamEntity requestEntity = new InputStreamEntity(fis);
             put.setEntity(requestEntity);
             int status =
-                webDavConfig.getClient().execute(put, webDavConfig.getContext()).getStatusLine().getStatusCode();
+                webDavSupport.getClient().execute(put, webDavSupport.getContext()).getStatusLine().getStatusCode();
             return status == HttpStatus.SC_CREATED;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -68,12 +70,52 @@ public class WebDavUtils {
     /**
      * 上传文件 路径不存在则递归创建目录 默认覆盖 不存在则创建
      *
-     * @param url 网络文件路径
+     * @param fileName 网络文件路径
      * @param path 文件流
      * @return
      */
-    public boolean upload(String url, String path) {
-        return upload(url, path, true, true);
+    public boolean upload(String scope, String fileName, String path) {
+        return upload(scope, fileName, FileTools.read(path), true);
+    }
+
+    /**
+     * 上传文件
+     * 
+     * @param scope 项目scope
+     * @param fileName 文件名【带后缀】
+     * @param file 文件地址
+     * @return
+     */
+    public boolean upload(String scope, String fileName, byte[] file, boolean cover) {
+        Assert.notNull(scope, "scope 不能为空");
+        Assert.notNull(fileName, "文件名不能为空");
+        Assert.notNull(file, "上传文件不能为空");
+
+        List<String> filePaths = Splitter.on(StrPoolConstant.SLASH).splitToList(fileName);
+        String basePath = webDavSupport.getBasePath();
+
+        // 递归创建文件夹
+        String scopePath = basePath + scope + StrPoolConstant.SLASH;
+        if (!exist(scopePath)) {
+            makeDir(scopePath);
+        }
+
+        String lastDir = makeDirs(scopePath, filePaths);
+
+        ByteArrayInputStream inputStream = IoUtil.toStream(file);
+
+        String filePath = lastDir + StrPoolConstant.SLASH + fileName;
+        if (exist(filePath)) {
+            if (cover) {
+                if (delete(filePath)) {
+                    return upload(filePath, inputStream);
+                }
+            } else {
+                return false;
+            }
+        }
+        return upload(filePath, inputStream);
+
     }
 
     /**
@@ -87,11 +129,11 @@ public class WebDavUtils {
      * @throws IOException
      */
     public boolean upload(String url, String path, boolean isCreate, boolean cover) {
-        if (!existDir(url)) {
+        if (!exist(url)) {
             if (!isCreate) {
                 throw new RuntimeException("路径不存在!");
             }
-            makeDirs(url);
+            makeDirs("",Lists.newArrayList(url));
         }
         if (!cover) {
             throw new RuntimeException("路径已存在!");
@@ -107,23 +149,16 @@ public class WebDavUtils {
     /**
      * 递归创建文件
      * 
-     * @param path 文件网络路径
+     * @param paths 文件网络路径
      * @throws IOException
      */
-    public void makeDirs(String path) {
-        path = path.replace(webDavConfig.getUri().getPath(), StringUtils.EMPTY);
-        String[] dirs = path.split(StrPoolConstant.SLASH);
-        if (path.lastIndexOf(StrPoolConstant.DOT) > 0) {
-            dirs = Arrays.copyOf(dirs, dirs.length - 1);
-        }
-        StringBuilder stringBuilder = new StringBuilder(webDavConfig.getUri().getPath());
-        for (String string : dirs) {
-            stringBuilder.append(string + StrPoolConstant.SLASH);
-            if (existDir(stringBuilder.toString())) {
-                continue;
-            }
+    public String makeDirs(String basePath, Collection<String> paths) {
+        StringBuilder stringBuilder = new StringBuilder(basePath);
+        paths.forEach(s -> {
+            stringBuilder.append(s).append(StrPoolConstant.SLASH);
             makeDir(stringBuilder.toString());
-        }
+        });
+        return stringBuilder.toString();
     }
 
     /**
@@ -132,10 +167,20 @@ public class WebDavUtils {
      * @param url 路径
      * @return
      */
-    public boolean existDir(String url) {
+    public boolean exist(String url) {
+        return exist(url, DavConstants.PROPFIND_BY_PROPERTY, Constant.NUMBER_ONE);
+    }
+
+    /**
+     * 判断文件或者文件夹是否存在
+     *
+     * @param url 路径
+     * @return
+     */
+    public boolean exist(String url, int propfindType, int dep) {
         try {
-            HttpPropfind propfind = new HttpPropfind(url, DavConstants.PROPFIND_BY_PROPERTY, 1);
-            HttpResponse response = webDavConfig.getClient().execute(propfind, webDavConfig.getContext());
+            HttpPropfind propfind = new HttpPropfind(url, propfindType, dep);
+            HttpResponse response = webDavSupport.getClient().execute(propfind, webDavSupport.getContext());
             int statusCode = response.getStatusLine().getStatusCode();
             return DavServletResponse.SC_MULTI_STATUS == statusCode;
         } catch (IOException e) {
@@ -149,15 +194,19 @@ public class WebDavUtils {
      * @param url 文件路径
      * @return
      */
-    public Boolean delete(String url) {
+    public boolean delete(String url) {
         try {
             HttpDelete delete = new HttpDelete(url);
             int statusCode =
-                webDavConfig.getClient().execute(delete, webDavConfig.getContext()).getStatusLine().getStatusCode();
+                webDavSupport.getClient().execute(delete, webDavSupport.getContext()).getStatusLine().getStatusCode();
             return HttpStatus.SC_NO_CONTENT == statusCode;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public boolean makeDir(String url) {
+        return touchFile(url);
     }
 
     /**
@@ -166,12 +215,13 @@ public class WebDavUtils {
      * @param url 路径
      * @return
      */
-    private boolean makeDir(String url) {
+    private boolean touchFile(String url) {
         try {
             HttpMkcol mkcol = new HttpMkcol(url);
-            int retCode =
-                webDavConfig.getClient().execute(mkcol, webDavConfig.getContext()).getStatusLine().getStatusCode();
-            return retCode == HttpStatus.SC_CREATED;
+            HttpResponse response = webDavSupport.getClient().execute(mkcol, webDavSupport.getContext());
+
+            String result = HttpUtils.checkResponseAndGetResult(response, Lists.newArrayList(HttpStatus.SC_CREATED));
+            return true;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -187,11 +237,17 @@ public class WebDavUtils {
     public void download(String url, String filePath) {
         try {
             HttpGet get = new HttpGet(url);
-            HttpResponse response = webDavConfig.getClient().execute(get, webDavConfig.getContext());
+            HttpResponse response = webDavSupport.getClient().execute(get, webDavSupport.getContext());
             byte[] bytes = HttpUtils.checkResponseStreamAndGetResult(response);
             FileTools.write(bytes, filePath);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        boolean exist = exist(webDavSupport.getBasePath());
+        Assert.isTrue(exist, "路径不存在");
     }
 }
