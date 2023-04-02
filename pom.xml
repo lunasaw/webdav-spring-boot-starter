@@ -12,7 +12,8 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <spring-boot.version>2.2.2.RELEASE</spring-boot.version>
-        <jackrabbit-webdav.version>2.21.1</jackrabbit-webdav.version>
+        <jackrabbit-webdav.version>2.21.15</jackrabbit-webdav.version>
+        <luna-common.version>2.3.4</luna-common.version>
     </properties>
 
     <name>webdav-spring-boot-starter</name>
@@ -66,7 +67,7 @@
         <dependency>
             <groupId>io.github.lunasaw</groupId>
             <artifactId>luna-common</artifactId>
-            <version>1.3.2</version>
+            <version>${luna-common.version}</version>
         </dependency>
     </dependencies>
 

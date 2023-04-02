@@ -4,6 +4,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
+
+import com.luna.common.constant.StrPoolConstant;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -108,14 +110,14 @@ public class WebDavUtils {
      * @throws IOException
      */
     public void makeDirs(String path) {
-        path = path.replace(webDavConfig.getUri().toString(), StringUtils.EMPTY);
-        String[] dirs = path.split("/");
-        if (path.lastIndexOf(".") > 0) {
+        path = path.replace(webDavConfig.getUri().getPath(), StringUtils.EMPTY);
+        String[] dirs = path.split(StrPoolConstant.SLASH);
+        if (path.lastIndexOf(StrPoolConstant.DOT) > 0) {
             dirs = Arrays.copyOf(dirs, dirs.length - 1);
         }
-        StringBuilder stringBuilder = new StringBuilder(webDavConfig.getUri().toString());
+        StringBuilder stringBuilder = new StringBuilder(webDavConfig.getUri().getPath());
         for (String string : dirs) {
-            stringBuilder.append(string + "/");
+            stringBuilder.append(string + StrPoolConstant.SLASH);
             if (existDir(stringBuilder.toString())) {
                 continue;
             }
