@@ -30,7 +30,7 @@
     <licenses>
         <license>
             <name>Apache 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
         </license>
     </licenses>
 
@@ -71,26 +71,58 @@
         </dependency>
     </dependencies>
 
+    <scm>
+        <url>https://github.com/lunasaw/webdav-spring-boot-starter</url>
+        <connection>scm:git:https://github.com/lunasaw/webdav-spring-boot-starter.git</connection>
+        <developerConnection>scm:git:https://github.com/lunasaw/webdav-spring-boot-starter</developerConnection>
+    </scm>
 
     <distributionManagement>
-        <repository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
+
     </distributionManagement>
 
-    <scm>
-        <url>https://github.com/lunasaw/baidu-spring-boot-starter</url>
-        <connection>scm:git:https://github.com/lunasaw/baidu-spring-boot-starter.git</connection>
-        <developerConnection>scm:git:https://github.com/lunasaw/baidu-spring-boot-starter</developerConnection>
-    </scm>
     <profiles>
         <profile>
+            <id>github_auth</id>
+            <distributionManagement>
+                <repository>
+                    <id>github_auth</id>
+                    <name>GitHub OWNER Apache Maven Packages</name>
+                    <url>https://maven.pkg.github.com/lunasaw/luna-fans-api</url>
+                </repository>
+                <snapshotRepository>
+                    <id>github_auth</id>
+                    <name>GitHub OWNER Apache Maven Packages</name>
+                    <url>https://maven.pkg.github.com/lunasaw/luna-fans-api</url>
+                </snapshotRepository>
+            </distributionManagement>
+            <repositories>
+                <repository>
+                    <!-- id需要与上面的server对应的id匹配 -->
+                    <id>github_auth</id>
+                    <name>GitHub OWNER Apache Maven Packages</name>
+                    <url>https://maven.pkg.github.com/lunasaw/luna-fans-api</url>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                </repository>
+            </repositories>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+        <profile>
             <id>ossrh</id>
+            <distributionManagement>
+                <repository>
+                    <id>ossrh</id>
+                    <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                </repository>
+                <snapshotRepository>
+                    <id>ossrh</id>
+                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+                </snapshotRepository>
+            </distributionManagement>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
@@ -100,11 +132,12 @@
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.3</version>
+                        <version>1.6.13</version>
                         <extensions>true</extensions>
                         <configuration>
                             <serverId>ossrh</serverId>
                             <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                            <!--自动释放，deploy就不需要在仓库中在操作部署了-->
                             <autoReleaseAfterClose>true</autoReleaseAfterClose>
                         </configuration>
                     </plugin>
@@ -116,7 +149,8 @@
                         <configuration>
                             <autoVersionSubmodules>true</autoVersionSubmodules>
                             <useReleaseProfile>false</useReleaseProfile>
-                            <releaseProfiles>release</releaseProfiles>
+                            <!--正式包release 快照包snapshots-->
+                            <releaseProfiles>snapshots</releaseProfiles>
                             <goals>deploy</goals>
                         </configuration>
                     </plugin>
@@ -127,12 +161,13 @@
                         <configuration>
                             <source>1.8</source>
                             <target>1.8</target>
+                            <encoding>utf-8</encoding>
                         </configuration>
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.5</version>
+                        <version>3.0.1</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -142,6 +177,12 @@
                                 </goals>
                             </execution>
                         </executions>
+                        <configuration>
+                            <gpgArguments>
+                                <arg>--pinentry-mode</arg>
+                                <arg>loopback</arg>
+                            </gpgArguments>
+                        </configuration>
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
@@ -161,8 +202,12 @@
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <version>2.9.1</version>
                         <configuration>
-                            <javadocExecutable>${java.home}/../bin/javadoc</javadocExecutable>
+                            <!--<javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>-->
                             <additionalparam>-Xdoclint:none</additionalparam>
+                            <aggregate>true</aggregate>
+                            <charset>UTF-8</charset><!-- utf-8读取文件 -->
+                            <encoding>UTF-8</encoding><!-- utf-8进行编码代码 -->
+                            <docencoding>UTF-8</docencoding><!-- utf-8进行编码文档 -->
                         </configuration>
                         <executions>
                             <execution>
