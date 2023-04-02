@@ -2,6 +2,9 @@ package com.luna.webdav;
 
 import java.net.URI;
 
+import com.luna.common.constant.StrPoolConstant;
+import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -14,6 +17,7 @@ import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -21,31 +25,45 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * 2021年03月12日 09:24:00
  */
 @ConfigurationProperties(prefix = "luna.webdav")
-public class WebDavConfig {
+@Data
+public class WebDavConfig implements InitializingBean{
 
-    private String            username, password;
+    private String            username;
+    private String            password;
+
+    /**
+     * domain:port
+     */
+    private String            host               = "127.0.0.1:8080";
+
+    /**
+     * like "/webdav"
+     */
+    private String            path               = "";
+
+    private Integer           maxTotal           = 100;
+
+    private Integer           defaultMaxPerRoute = 80;
+
     private URI               uri;
     private HttpClient        client;
     private HttpClientContext context;
 
     public void initClientContext() {
-        initClientContext(uri.toString(), username, password);
+        initClientContext(host, path, username, password);
     }
 
-    public void initClientContext(String baseUri, String userName,
-        String passWord) {
-        if (!baseUri.endsWith("/")) {
-            baseUri += "/";
-        }
-        this.uri = URI.create(baseUri);
+    public void initClientContext(String host, String path, String userName, String passWord) {
+
+        this.uri = URI.create(host + path);
         this.username = userName;
         this.password = passWord;
 
         PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
         // 设置最大连接数
-        cm.setMaxTotal(100);
-        cm.setDefaultMaxPerRoute(80);
-        HttpHost targetHost = new HttpHost(uri.getHost(), uri.getPort());
+        cm.setMaxTotal(defaultMaxPerRoute);
+        cm.setDefaultMaxPerRoute(defaultMaxPerRoute);
+        HttpHost targetHost = new HttpHost(host);
 
         CredentialsProvider credsProvider = new BasicCredentialsProvider();
         UsernamePasswordCredentials upc = new UsernamePasswordCredentials(this.username, this.password);
@@ -63,57 +81,8 @@ public class WebDavConfig {
         this.client = HttpClients.custom().setConnectionManager(cm).build();
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public WebDavConfig setUsername(String username) {
-        this.username = username;
-        return this;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public WebDavConfig setPassword(String password) {
-        this.password = password;
-        return this;
-    }
-
-    public URI getUri() {
-        return uri;
-    }
-
-    public WebDavConfig setUri(URI uri) {
-        this.uri = uri;
-        return this;
-    }
-
-    public HttpClient getClient() {
-        return client;
-    }
-
-    public WebDavConfig setClient(HttpClient client) {
-        this.client = client;
-        return this;
-    }
-
-    public HttpClientContext getContext() {
-        return context;
-    }
-
-    public WebDavConfig setContext(HttpClientContext context) {
-        this.context = context;
-        return this;
-    }
-
     @Override
-    public String toString() {
-        return "WebDavConfig{" +
-            "username='" + username + '\'' +
-            ", password='" + password + '\'' +
-            ", uri=" + uri +
-            '}';
+    public void afterPropertiesSet() throws Exception {
+        initClientContext();
     }
 }
