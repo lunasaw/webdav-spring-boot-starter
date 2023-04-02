@@ -1,10 +1,8 @@
-package com.luna.webdav;
+package io.github.lunasaw.webdav.properties;
 
 import java.net.URI;
 
-import com.luna.common.constant.StrPoolConstant;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;

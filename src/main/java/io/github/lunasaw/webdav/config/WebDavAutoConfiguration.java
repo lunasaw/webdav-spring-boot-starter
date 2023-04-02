@@ -1,7 +1,7 @@
-package com.luna.webdav.config;
+package io.github.lunasaw.webdav.config;
 
-import com.luna.webdav.WebDavConfig;
-import com.luna.webdav.WebDavUtils;
+import io.github.lunasaw.webdav.WebDavUtils;
+import io.github.lunasaw.webdav.properties.WebDavConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
