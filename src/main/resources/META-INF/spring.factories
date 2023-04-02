@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.luna.webdav.config.WebDavAutoConfiguration
+io.github.lunasaw.webdav.config.WebDavAutoConfiguration

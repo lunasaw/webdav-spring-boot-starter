@@ -1,4 +1,4 @@
-package com.luna.webdav;
+package io.github.lunasaw.webdav;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import com.luna.common.constant.StrPoolConstant;
+import io.github.lunasaw.webdav.properties.WebDavConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
