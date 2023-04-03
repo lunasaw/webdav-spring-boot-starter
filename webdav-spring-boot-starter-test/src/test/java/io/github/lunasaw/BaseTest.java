@@ -1,6 +1,7 @@
 package io.github.lunasaw;
 
 import com.alibaba.fastjson.JSON;
+import io.github.lunasaw.webdav.WebDavSupport;
 import io.github.lunasaw.webdav.properties.WebDavConfig;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,11 +27,11 @@ public class BaseTest {
     private Environment environment;
 
     @Autowired
-    private WebDavConfig webDavConfig;
+    private WebDavSupport webDavSupport;
 
     @Test
     public void atest() {
-        System.out.println(JSON.toJSONString(webDavConfig.getUri()));
+        System.out.println(JSON.toJSONString(webDavSupport.getBasePath()));
     }
 
 }

@@ -1,5 +1,6 @@
 package io.github.lunasaw.webdav.config;
 
+import io.github.lunasaw.webdav.WebDavSupport;
 import io.github.lunasaw.webdav.WebDavUtils;
 import io.github.lunasaw.webdav.properties.WebDavConfig;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,8 +26,12 @@ public class WebDavAutoConfiguration {
     }
 
     @Bean
+    public WebDavSupport webDavSupport() {
+        return new WebDavSupport();
+    }
+
+    @Bean
     public WebDavUtils webDavUtils() {
         return new WebDavUtils();
     }
-
 }
