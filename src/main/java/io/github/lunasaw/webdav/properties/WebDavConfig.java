@@ -27,4 +27,5 @@ public class WebDavConfig {
 
     private Integer defaultMaxPerRoute = 80;
 
+    private String  scope;
 }

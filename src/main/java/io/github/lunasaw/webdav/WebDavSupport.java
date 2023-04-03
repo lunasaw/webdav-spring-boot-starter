@@ -37,7 +37,6 @@ public class WebDavSupport implements InitializingBean {
     private HttpClient        client;
     private HttpClientContext context;
 
-
     private URL               url;
 
     public HttpResponse executeWithContext(HttpEntityEnclosingRequestBase base) throws IOException {
