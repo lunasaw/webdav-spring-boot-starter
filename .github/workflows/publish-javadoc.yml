@@ -17,4 +17,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SECRET_KEY }}
           javadoc-branch: javadoc
           java-version: 17
-          target-folder: javadoc
+          target-folder: docs
+          without-deploy: true
