@@ -16,9 +16,9 @@
 
 ## webdav-spring-boot-starter使用示例：
 
-### 引入以来
+### 1.引入依赖
 
-### 添加配置
+### 2.添加配置
 
 指定luna.webdav.host后，spring启动会自动引入`io.github.lunasaw.webdav.config.WebDavAutoConfiguration`初始化配置。
 
@@ -34,7 +34,7 @@ luna:
     password: luna # webdav 的basic配置密码
 ```
 
-### 使用方法
+### 3.使用
 
 所有方法都封装在`io.github.lunasaw.webdav.WebDavUtils`使用可以参见`webdav-spring-boot-starter-test`,只需要注入即可使用
 
@@ -45,10 +45,25 @@ luna:
 
 #### 上传
 
-
+```java
+    @Test
+    public void atest() {
+        boolean test =
+            webDavUtils.upload("/images/buy_logo.jpeg", "/Users/weidian/compose/images/buy_logo.jpeg");
+        Assert.isTrue(test);
+        boolean exist = webDavUtils.exist("http://localhost:8080/webdav/project/test/images/buy_logo.jpeg");
+        Assert.isTrue(exist);
+    }
+```
 
 #### 下载
 
-#### 查看路径
-
-#### 
+```java
+    @Test
+    public void btest() {
+        String ROUND_FILE_PATH = "/Users/weidian/compose/images/buy_logo_{}.jpeg";
+        ROUND_FILE_PATH = StringTools.format(ROUND_FILE_PATH, RandomUtils.nextInt());
+        webDavUtils.download("test", "/images/buy_logo.jpeg", ROUND_FILE_PATH);
+        Assert.isTrue(FileTools.isExists(ROUND_FILE_PATH), ROUND_FILE_PATH + "文件下载错误");
+    }
+```
