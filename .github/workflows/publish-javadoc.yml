@@ -13,7 +13,7 @@ jobs:
         uses: MathieuSoysal/Javadoc-publisher.yml@v2.3.0
         with:
           GITHUB_TOKEN: ${{ secrets.SECRET_KEY }}
-          javadoc-branch: javadoc
+          javadoc-branch: webdav-spring-boot-starter
           java-version: 8
-          target-folder: javadoc
+          target-folder: docs
           without-deploy: true
