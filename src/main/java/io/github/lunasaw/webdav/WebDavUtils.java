@@ -7,8 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
@@ -111,7 +111,8 @@ public class WebDavUtils implements InitializingBean {
 
         String fileName = FileNameUtil.getName(filePath);
         String directoryPath = StringTools.removeEnd(filePath, fileName);
-        List<String> filePaths = Splitter.on(StrPoolConstant.SLASH).splitToList(directoryPath);
+        List<String> filePaths =
+            Splitter.on(StrPoolConstant.SLASH).splitToList(directoryPath).stream().filter(StringUtils::isNoneBlank).collect(Collectors.toList());
         String basePath = webDavSupport.getBasePath();
 
         String scopePath = basePath + scope + StrPoolConstant.SLASH;
@@ -120,6 +121,10 @@ public class WebDavUtils implements InitializingBean {
                 log.warn("upload::scope = {}, directoryPath = {}, file = {}, created = {}, cover = {}", scope, directoryPath, file, created, cover);
                 return false;
             }
+        }
+
+        if (filePaths.size() > Constant.NUMBER_ONE && !created) {
+            return false;
         }
 
         // 创建文件夹
@@ -142,10 +147,19 @@ public class WebDavUtils implements InitializingBean {
     }
 
     /**
-     * 递归创建文件
+     * 
      *
      * @param paths 文件网络路径
      * @throws IOException
+     */
+
+    /**
+     * 文件树创建文件
+     * 
+     * @param basePath 基础路径
+     * @param paths 新建路径
+     * @param created 父级目录不存在 是否创建
+     * @return
      */
     public String makeDirs(String basePath, Collection<String> paths, boolean created) {
         StringBuilder stringBuilder = new StringBuilder(basePath);
@@ -159,10 +173,7 @@ public class WebDavUtils implements InitializingBean {
                 stringBuilder.append(StrPoolConstant.SLASH);
             }
             if (!exist(stringBuilder.toString())) {
-                if (created) {
-                    makeDir(stringBuilder.toString());
-                }
-                throw new RuntimeException("not created, and path not exist");
+                makeDir(stringBuilder.toString());
             }
         }
 
@@ -253,7 +264,7 @@ public class WebDavUtils implements InitializingBean {
     }
 
     /**
-     * @param scope  项目scope
+     * @param scope 项目scope
      * @param filePath 相对路径
      * @param localPath 本地文件路径
      * @param create
