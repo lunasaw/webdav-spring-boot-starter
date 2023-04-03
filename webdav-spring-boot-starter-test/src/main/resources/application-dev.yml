@@ -1,7 +1,8 @@
 luna:
   webdav:
     host: http://127.0.0.1:8080
-    path: /webdav
+    path: /webdav/project
+    scope: test
     maxTotal: 80
     defaultMaxPerRoute: 100
     username: luna
