@@ -1,15 +1,21 @@
 package io.github.lunasaw.webdav;
 
 import java.io.*;
+import java.net.URL;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.luna.common.constant.Constant;
 import com.luna.common.constant.StrPoolConstant;
+import com.luna.common.file.FileNameUtil;
 import com.luna.common.io.IoUtil;
+import com.luna.common.text.StringTools;
 import com.luna.common.utils.Assert;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpDelete;
@@ -48,8 +54,8 @@ public class WebDavUtils implements InitializingBean {
             HttpPut put = new HttpPut(url);
             InputStreamEntity requestEntity = new InputStreamEntity(fis);
             put.setEntity(requestEntity);
-            int status =
-                webDavSupport.getClient().execute(put, webDavSupport.getContext()).getStatusLine().getStatusCode();
+            HttpResponse response = webDavSupport.executeWithContext(put);
+            int status = response.getStatusLine().getStatusCode();
             return status == HttpStatus.SC_CREATED;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -82,39 +88,41 @@ public class WebDavUtils implements InitializingBean {
      * 上传文件
      * 
      * @param scope 项目scope
-     * @param fileName 文件名【带后缀】
+     * @param filePath 文件名【带后缀】
      * @param file 文件地址
      * @return
      */
-    public boolean upload(String scope, String fileName, byte[] file, boolean cover) {
+    public boolean upload(String scope, String filePath, byte[] file, boolean cover) {
         Assert.notNull(scope, "scope 不能为空");
-        Assert.notNull(fileName, "文件名不能为空");
+        Assert.notNull(filePath, "文件名不能为空");
         Assert.notNull(file, "上传文件不能为空");
 
-        List<String> filePaths = Splitter.on(StrPoolConstant.SLASH).splitToList(fileName);
+        String fileName = FileNameUtil.getName(filePath);
+        filePath = StringTools.removeEnd(filePath, fileName);
+        List<String> filePaths = Splitter.on(StrPoolConstant.SLASH).splitToList(filePath);
         String basePath = webDavSupport.getBasePath();
 
-        // 递归创建文件夹
         String scopePath = basePath + scope + StrPoolConstant.SLASH;
         if (!exist(scopePath)) {
             makeDir(scopePath);
         }
 
+        // 创建文件夹
         String lastDir = makeDirs(scopePath, filePaths);
 
         ByteArrayInputStream inputStream = IoUtil.toStream(file);
 
-        String filePath = lastDir + StrPoolConstant.SLASH + fileName;
-        if (exist(filePath)) {
+        String absoluteFilePath = lastDir + fileName;
+        if (exist(absoluteFilePath)) {
             if (cover) {
-                if (delete(filePath)) {
-                    return upload(filePath, inputStream);
+                if (delete(absoluteFilePath)) {
+                    return upload(absoluteFilePath, inputStream);
                 }
             } else {
                 return false;
             }
         }
-        return upload(filePath, inputStream);
+        return upload(absoluteFilePath, inputStream);
 
     }
 
@@ -133,7 +141,7 @@ public class WebDavUtils implements InitializingBean {
             if (!isCreate) {
                 throw new RuntimeException("路径不存在!");
             }
-            makeDirs("",Lists.newArrayList(url));
+            makeDirs("", Lists.newArrayList(url));
         }
         if (!cover) {
             throw new RuntimeException("路径已存在!");
@@ -154,10 +162,20 @@ public class WebDavUtils implements InitializingBean {
      */
     public String makeDirs(String basePath, Collection<String> paths) {
         StringBuilder stringBuilder = new StringBuilder(basePath);
-        paths.forEach(s -> {
-            stringBuilder.append(s).append(StrPoolConstant.SLASH);
-            makeDir(stringBuilder.toString());
-        });
+
+        for (String path : paths) {
+            if (StringUtils.isBlank(path)) {
+                continue;
+            }
+            stringBuilder.append(path);
+            if (!path.endsWith(StrPoolConstant.SLASH)) {
+                stringBuilder.append(StrPoolConstant.SLASH);
+            }
+            if (!exist(stringBuilder.toString())) {
+                makeDir(stringBuilder.toString());
+            }
+        }
+
         return stringBuilder.toString();
     }
 
@@ -174,13 +192,14 @@ public class WebDavUtils implements InitializingBean {
     /**
      * 判断文件或者文件夹是否存在
      *
-     * @param url 路径
+     * @param url 网络路径
      * @return
      */
     public boolean exist(String url, int propfindType, int dep) {
+        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         try {
             HttpPropfind propfind = new HttpPropfind(url, propfindType, dep);
-            HttpResponse response = webDavSupport.getClient().execute(propfind, webDavSupport.getContext());
+            HttpResponse response = webDavSupport.executeWithContext(propfind);
             int statusCode = response.getStatusLine().getStatusCode();
             return DavServletResponse.SC_MULTI_STATUS == statusCode;
         } catch (IOException e) {
@@ -219,9 +238,7 @@ public class WebDavUtils implements InitializingBean {
         try {
             HttpMkcol mkcol = new HttpMkcol(url);
             HttpResponse response = webDavSupport.getClient().execute(mkcol, webDavSupport.getContext());
-
-            String result = HttpUtils.checkResponseAndGetResult(response, Lists.newArrayList(HttpStatus.SC_CREATED));
-            return true;
+            return mkcol.succeeded(response);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
