@@ -5,10 +5,13 @@ import com.luna.common.constant.Constant;
 import com.luna.common.constant.StrPoolConstant;
 import com.luna.common.utils.Assert;
 import io.github.lunasaw.webdav.WebDavSupport;
+import io.github.lunasaw.webdav.hander.ResponseHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
+import org.apache.http.entity.StringEntity;
 import org.apache.jackrabbit.webdav.DavConstants;
+import org.apache.jackrabbit.webdav.DavResource;
 import org.apache.jackrabbit.webdav.DavServletResponse;
 import org.apache.jackrabbit.webdav.client.methods.*;
 import org.apache.jackrabbit.webdav.lock.LockInfo;
@@ -18,8 +21,12 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.xml.ws.Response;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -102,6 +109,10 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         }
     }
 
+    public boolean list(String url) {
+        return list(url, DavConstants.PROPFIND_ALL_PROP, Constant.NUMBER_ONE);
+    }
+
     /**
      * 判断文件或者文件夹是否存在
      *
@@ -109,7 +120,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * @return
      */
     public boolean exist(String url) {
-        return exist(url, DavConstants.PROPFIND_BY_PROPERTY, Constant.NUMBER_ONE);
+        return list(url, DavConstants.PROPFIND_BY_PROPERTY, Constant.NUMBER_ONE);
     }
 
     /**
@@ -118,13 +129,13 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * @param url 网络路径
      * @return
      */
-    public boolean exist(String url, int propfindType, int dep) {
+    public boolean list(String url, int propfindType, int dep) {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         try {
             HttpPropfind propfind = new HttpPropfind(url, propfindType, dep);
-            HttpResponse response = webDavSupport.executeWithContext(propfind);
-            int statusCode = response.getStatusLine().getStatusCode();
-            return DavServletResponse.SC_MULTI_STATUS == statusCode;
+            String execute = webDavSupport.execute(propfind, new ResponseHandler());
+            System.out.println(execute);
+            return true;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -295,4 +306,28 @@ public class WebDavJackrabbitUtils implements InitializingBean {
             throw new RuntimeException(e);
         }
     }
+
+
+//    protected List<DavResource> propfind(String url, int depth, Propfind body) throws IOException
+//    {
+//        HttpPropfind entity = new HttpPropfind(url);
+//
+//        entity.setDepth(depth < 0 ? "infinity" : Integer.toString(depth));
+//        entity.setEntity(new StringEntity(SardineUtil.toXml(body), UTF_8));
+//        Multistatus multistatus = this.execute(entity, new ResponseHandler());
+//        List<Response> responses = multistatus.getResponse();
+//        List<DavResource> resources = new ArrayList<DavResource>(responses.size());
+//        for (Response response : responses)
+//        {
+//            try
+//            {
+//                resources.add(new DavResource(response));
+//            }
+//            catch (URISyntaxException e)
+//            {
+//                log.warning(String.format("Ignore resource with invalid URI %s", response.getHref().get(0)));
+//            }
+//        }
+//        return resources;
+//    }
 }

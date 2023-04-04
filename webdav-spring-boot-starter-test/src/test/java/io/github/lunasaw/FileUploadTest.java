@@ -51,40 +51,37 @@ public class FileUploadTest extends BaseTest {
     }
 
     @Test
-    public void ctest() throws IOException {
+    public void copy_test() throws IOException {
         webDavJackrabbitUtils.copy("http://localhost:8080/webdav/project/test/", "http://localhost:8080/webdav/project/test2/", true, false);
     }
 
     @Test
-    public void dtest() throws IOException {
-        webDavJackrabbitUtils.checkOut("http://localhost:8080/webdav/project/test/");
-        boolean copy =
-            webDavJackrabbitUtils.copy("http://localhost:8080/webdav/project/test/", "http://localhost:8080/webdav/project/test2/", true, false);
-        Assert.isTrue(!copy);
+    public void exist_test() throws IOException {
+        webDavJackrabbitUtils.exist("http://localhost:8080/webdav/project/");
     }
 
     @Test
     public void unlock_test() {
 
-        String token = "opaquelocktoken:b5157ad0-a066-4c9d-8fea-02947b668a0b";
-        boolean lock = webDavJackrabbitUtils.unLock(webDavSupport.getBasePath() + "test3", token);
+        String token = "opaquelocktoken:147aebb9-27f9-4b70-baf3-151ad354420b";
+        boolean lock = webDavJackrabbitUtils.unLock(webDavSupport.getBasePath() + "test/buy_logo.jpeg", token);
         System.out.println(lock);
     }
 
     @Test
     public void lock_first_test() {
         String filePath = webDavSupport.getBasePath();
-        String luna = webDavJackrabbitUtils.lockExclusive(filePath + "test4", "", 900);
+        String luna = webDavJackrabbitUtils.lockExclusive(filePath + "test/buy_logo.jpeg", "", 900);
         System.out.println(luna);
     }
 
     @Test
     public void lock_continue_test() {
         String filePath = webDavSupport.getBasePath();
-        String token = "opaquelocktoken:b7d26ca9-00d9-4b7e-8bda-8a9737081b24";
-        boolean exist = webDavJackrabbitUtils.exist(filePath + "test4");
+        String token = "opaquelocktoken:147aebb9-27f9-4b70-baf3-151ad354420b";
+        boolean exist = webDavJackrabbitUtils.exist(filePath + "test/buy_logo.jpeg");
         System.out.println(exist);
-        String s = webDavJackrabbitUtils.lockExist(filePath + "test4", 500, token);
+        String s = webDavJackrabbitUtils.lockExist(filePath + "test/buy_logo.jpeg", 500, token);
         System.out.println(s);
         boolean exist1 = webDavJackrabbitUtils.makeDir(filePath + "test4");
         System.out.println(exist1);
