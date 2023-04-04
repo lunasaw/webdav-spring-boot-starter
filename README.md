@@ -12,7 +12,8 @@
 </dependency>
 ```
 
-[Api文档链接](https://lunasaw.github.io/webdav-spring-boot-starter/api_doc/)
+[Api文档链接](https://lunasaw.github.io/webdav-spring-boot-starter/docs/)
+这里使用
 
 ## webdav-spring-boot-starter使用示例：
 
@@ -36,7 +37,7 @@ luna:
 
 ### 3.使用
 
-所有方法都封装在`io.github.lunasaw.webdav.WebDavUtils`使用可以参见`webdav-spring-boot-starter-test`,只需要注入即可使用
+所有方法都封装在`io.github.lunasaw.webdav.request.WebDavBaseUtils`使用可以参见`webdav-spring-boot-starter-test`,只需要注入即可使用
 
 ```java
     @Autowired

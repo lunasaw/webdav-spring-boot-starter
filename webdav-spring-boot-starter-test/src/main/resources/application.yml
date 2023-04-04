@@ -1,3 +1,6 @@
 spring:
   profiles:
     active: dev
+
+logging:
+  config: classpath:log/logback.xml

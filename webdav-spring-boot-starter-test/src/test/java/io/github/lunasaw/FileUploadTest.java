@@ -3,7 +3,10 @@ package io.github.lunasaw;
 import com.luna.common.file.FileTools;
 import com.luna.common.text.StringTools;
 import com.luna.common.utils.Assert;
-import io.github.lunasaw.webdav.WebDavUtils;
+import io.github.lunasaw.webdav.WebDavSupport;
+import io.github.lunasaw.webdav.request.WebDavBaseUtils;
+import io.github.lunasaw.webdav.request.WebDavJackrabbitUtils;
+import io.github.lunasaw.webdav.request.WebDavUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,23 +22,72 @@ import java.net.URL;
 public class FileUploadTest extends BaseTest {
 
     @Autowired
-    private WebDavUtils webDavUtils;
+    private WebDavBaseUtils       webDavBaseUtils;
+
+    @Autowired
+    private WebDavUtils           webDavUtils;
+
+    @Autowired
+    private WebDavSupport         webDavSupport;
+
+    @Autowired
+    private WebDavJackrabbitUtils webDavJackrabbitUtils;
 
     @Test
-    public void atest() {
+    public void upload_test() {
         boolean test =
-            webDavUtils.upload("/images/buy_logo.jpeg", "/Users/weidian/compose/images/buy_logo.jpeg");
+            webDavUtils.upload("/images/buy_logo22.jpeg", "/Users/weidian/compose/images/buy_logo.jpeg");
         Assert.isTrue(test);
-        boolean exist = webDavUtils.exist("http://localhost:8080/webdav/project/test/images/buy_logo.jpeg");
+        boolean exist = webDavJackrabbitUtils.exist("http://localhost:8080/webdav/project/test/images/buy_logo.jpeg");
         Assert.isTrue(exist);
     }
 
     @Test
-    public void btest() {
+    public void download_test() {
         String ROUND_FILE_PATH = "/Users/weidian/compose/images/buy_logo_{}.jpeg";
         ROUND_FILE_PATH = StringTools.format(ROUND_FILE_PATH, RandomUtils.nextInt());
         webDavUtils.download("test", "/images/buy_logo.jpeg", ROUND_FILE_PATH);
         Assert.isTrue(FileTools.isExists(ROUND_FILE_PATH), ROUND_FILE_PATH + "文件下载错误");
+    }
+
+    @Test
+    public void ctest() throws IOException {
+        webDavJackrabbitUtils.copy("http://localhost:8080/webdav/project/test/", "http://localhost:8080/webdav/project/test2/", true, false);
+    }
+
+    @Test
+    public void dtest() throws IOException {
+        webDavJackrabbitUtils.checkOut("http://localhost:8080/webdav/project/test/");
+        boolean copy =
+            webDavJackrabbitUtils.copy("http://localhost:8080/webdav/project/test/", "http://localhost:8080/webdav/project/test2/", true, false);
+        Assert.isTrue(!copy);
+    }
+
+    @Test
+    public void unlock_test() {
+
+        String token = "opaquelocktoken:b5157ad0-a066-4c9d-8fea-02947b668a0b";
+        boolean lock = webDavJackrabbitUtils.unLock(webDavSupport.getBasePath() + "test3", token);
+        System.out.println(lock);
+    }
+
+    @Test
+    public void lock_first_test() {
+        String filePath = webDavSupport.getBasePath();
+        String luna = webDavJackrabbitUtils.lockExclusive(filePath + "test4", "", 900);
+        System.out.println(luna);
+    }
+
+    @Test
+    public void lock_continue_test() {
+        String filePath = webDavSupport.getBasePath();
+        String token = "opaquelocktoken:b7d26ca9-00d9-4b7e-8bda-8a9737081b24";
+        boolean exist = webDavJackrabbitUtils.exist(filePath + "test4");
+        System.out.println(exist);
+        String s = webDavJackrabbitUtils.lockExist(filePath + "test4", 500, token);
+        System.out.println(s);
+        boolean exist1 = webDavJackrabbitUtils.makeDir(filePath + "test4");
+        System.out.println(exist1);
     }
 
     @Test
