@@ -1,12 +1,10 @@
 package io.github.lunasaw.webdav.config;
 
-import io.github.lunasaw.webdav.WebDavSupport;
-import io.github.lunasaw.webdav.WebDavUtils;
 import io.github.lunasaw.webdav.properties.WebDavConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 /**
@@ -16,6 +14,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @EnableConfigurationProperties(WebDavConfig.class)
 @ConditionalOnProperty(prefix = "luna.webdav", name = "host")
+@ComponentScan("io.github.lunasaw.webdav")
 public class WebDavAutoConfiguration {
 
     @Autowired
@@ -23,15 +22,5 @@ public class WebDavAutoConfiguration {
 
     public WebDavAutoConfiguration(WebDavConfig webDavConfig) {
         this.webDavConfig = webDavConfig;
-    }
-
-    @Bean
-    public WebDavSupport webDavSupport() {
-        return new WebDavSupport();
-    }
-
-    @Bean
-    public WebDavUtils webDavUtils() {
-        return new WebDavUtils();
     }
 }

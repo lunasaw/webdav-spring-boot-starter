@@ -2,7 +2,7 @@ luna:
   webdav:
     host: http://127.0.0.1:8080 #指定host
     path: /webdav/project #指定跟路径
-    scope: test #指定项目scope 可选，后续上传可自定义scpoe
+    scope: test4 #指定项目scope 可选，后续上传可自定义scpoe
     maxTotal: 80 # 最大链接数量通 优化httpclient
     defaultMaxPerRoute: 100
     username: luna # webdav 的basic配置用户名

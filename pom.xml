@@ -6,12 +6,12 @@
 
     <groupId>io.github.lunasaw</groupId>
     <artifactId>webdav-spring-boot-starter</artifactId>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.3-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <spring-boot.version>2.2.2.RELEASE</spring-boot.version>
+        <spring-boot.version>2.7.8</spring-boot.version>
         <jackrabbit-webdav.version>2.21.15</jackrabbit-webdav.version>
         <luna-common.version>2.3.4</luna-common.version>
         <github.username>lunasaw</github.username>
@@ -209,6 +209,12 @@
                             <charset>UTF-8</charset><!-- utf-8读取文件 -->
                             <encoding>UTF-8</encoding><!-- utf-8进行编码代码 -->
                             <docencoding>UTF-8</docencoding><!-- utf-8进行编码文档 -->
+                            <tags>
+                                <tag>
+                                    <name>date</name>
+                                    <name>description</name>
+                                </tag>
+                            </tags>
                         </configuration>
                         <executions>
                             <execution>
