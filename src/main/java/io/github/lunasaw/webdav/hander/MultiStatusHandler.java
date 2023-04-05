@@ -38,6 +38,8 @@ import org.json.XML;
 public class MultiStatusHandler extends ValidatingResponseHandler<MultiStatusResult> {
     @Override
     public MultiStatusResult handleResponse(HttpResponse response) throws IOException {
+        super.validateResponse(response);
+
         // Process the response from the server.
         HttpEntity entity = response.getEntity();
         StatusLine statusLine = response.getStatusLine();

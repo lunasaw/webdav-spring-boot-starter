@@ -33,41 +33,38 @@ import org.json.XML;
 /**
  * @author weidian
  */
-public class LockResponseHandler extends ValidatingResponseHandler<String>
-{
-	@Override
-	public String handleResponse(HttpResponse response) throws IOException {
-		super.validateResponse(response);
+public class LockResponseHandler extends ValidatingResponseHandler<String> {
+    @Override
+    public String handleResponse(HttpResponse response) {
+        super.validateResponse(response);
 
-		// Process the response from the server.
-		HttpEntity entity = response.getEntity();
+        // Process the response from the server.
+        HttpEntity entity = response.getEntity();
         StatusLine statusLine = response.getStatusLine();
-		if (entity == null) {
-			throw new WebDavException("No entity found in response", statusLine.getStatusCode(),
-					statusLine.getReasonPhrase());
-		}
-        try
-        {
-			return this.getToken(entity.getContent());
+        if (entity == null) {
+            throw new WebDavException("No entity found in response", statusLine.getStatusCode(),
+                statusLine.getReasonPhrase());
         }
-        catch(IOException e) {
+        try {
+            return this.getToken(entity.getContent());
+        } catch (IOException e) {
             // JAXB error unmarshalling response stream
             throw new WebDavException(e.getMessage(), statusLine.getStatusCode(), statusLine.getReasonPhrase());
         }
-	}
+    }
 
-	/**
-	 * Helper method for getting the Multistatus response processor.
-	 *
-	 * @param stream The input to read the status
-	 * @return Multistatus element parsed from the stream
-	 * @throws IOException When there is a JAXB error
-	 */
-	protected String getToken(InputStream stream)
-			throws IOException {
-		String read = IoUtil.read(stream, Charset.defaultCharset());
-		JSONObject jsonObject = XML.toJSONObject(read);
-		PropResult propResult = JSON.parseObject(jsonObject.toString(), PropResult.class);
-		return propResult.getProp().getLockdiscovery().getActivelock().getLocktoken().getHref().iterator().next();
-	}
+    /**
+     * Helper method for getting the Multistatus response processor.
+     *
+     * @param stream The input to read the status
+     * @return Multistatus element parsed from the stream
+     * @throws IOException When there is a JAXB error
+     */
+    protected String getToken(InputStream stream)
+        throws IOException {
+        String read = IoUtil.read(stream, Charset.defaultCharset());
+        JSONObject jsonObject = XML.toJSONObject(read);
+        PropResult propResult = JSON.parseObject(jsonObject.toString(), PropResult.class);
+        return propResult.getProp().getLockdiscovery().getActivelock().getLocktoken().getHref().iterator().next();
+    }
 }

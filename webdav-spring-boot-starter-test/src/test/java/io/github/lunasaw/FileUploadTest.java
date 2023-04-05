@@ -18,6 +18,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.UUID;
 
+import static org.junit.Assert.assertTrue;
+
 /**
  * @author chenzhangyue
  * 2023/4/2
@@ -73,7 +75,7 @@ public class FileUploadTest extends BaseTest {
     public void unlock_test() {
 
         String token = "opaquelocktoken:32e098d5-ad9d-4509-9106-d05445472562";
-        boolean lock = webDavJackrabbitUtils.unLock(webDavSupport.getBasePath() + "test/images/", token);
+        boolean lock = webDavUtils.unLock(webDavSupport.getBasePath() + "test/images/", token);
         System.out.println(lock);
 
     }
@@ -81,31 +83,32 @@ public class FileUploadTest extends BaseTest {
     @Test
     public void lock_first_test() {
         String filePath = webDavSupport.getBasePath();
-        String url = String.format("http://localhost:8080/webdav/project/test/images/", UUID.randomUUID());
-        String luna = webDavJackrabbitUtils.lockExclusive(url);
+        String url = String.format(filePath + "test/images/", UUID.randomUUID());
+        String luna = webDavUtils.lockExclusive(url);
         System.out.println(luna);
-        webDavBaseUtils.delete("http://localhost:8080/webdav/project/test/images/hhh/");
+        webDavBaseUtils.delete(url);
     }
 
     @Test
     public void create_test() {
         String filePath = webDavSupport.getBasePath();
-
         String url = String.format(filePath + "test/images/hhh/%s", UUID.randomUUID());
         System.out.println(url);
-        boolean upload = webDavUtils.upload(url, new byte[0], true);
-        System.out.println(upload);
+        webDavUtils.upload(url, new byte[0], true);
     }
 
     @Test
     public void lock_second_test() {
         String filePath = webDavSupport.getBasePath();
-        String url = String.format(filePath + "test/images/hhh/", UUID.randomUUID());
-        String token = webDavJackrabbitUtils.lockExclusive(url, 5000 * 10);
+        String url = String.format(filePath + "test/%s", UUID.randomUUID());
+        webDavUtils.upload(url, new byte[0], true);
+        String token = webDavUtils.lockExclusive(url, 5000);
+        webDavUtils.delete(url);
         System.out.println(token);
-        String toekn2 = webDavJackrabbitUtils.refreshLock(url, 5000 * 20, token);
-        System.out.println(toekn2);
-        webDavBaseUtils.delete(url);
+        String result = webDavUtils.refreshLock(url, 5000 * 20, token);
+        System.out.println(result);
+        assertTrue(token.startsWith("opaquelocktoken:"));
+        assertTrue(token.equals(result));
     }
 
     @Test
@@ -114,7 +117,7 @@ public class FileUploadTest extends BaseTest {
         String token = "opaquelocktoken:f81d537e-2907-4a17-a7ff-670d19763bdf";
         boolean exist = webDavJackrabbitUtils.exist(filePath + "test/buy_logo.jpeg");
         System.out.println(exist);
-        String s = webDavJackrabbitUtils.lockExist(filePath + "test/buy_logo.jpeg", token);
+        String s = webDavUtils.lockExist(filePath + "test/buy_logo.jpeg", token);
         System.out.println(s);
         boolean exist1 = webDavJackrabbitUtils.makeDir(filePath + "test4");
         System.out.println(exist1);

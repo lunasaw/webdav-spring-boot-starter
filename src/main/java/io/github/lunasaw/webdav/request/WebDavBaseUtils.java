@@ -79,24 +79,17 @@ public class WebDavBaseUtils {
      * @param fis 文件流
      * @return
      */
-    public boolean upload(String url, InputStream fis) {
-        try {
-            HttpPut put = new HttpPut(url);
-            InputStreamEntity requestEntity = new InputStreamEntity(fis);
-            put.setEntity(requestEntity);
-            return webDavSupport.execute(put, new ValidatingResponseHandler<Boolean>() {
-                @Override
-                public Boolean handleResponse(HttpResponse httpResponse) {
-                    try {
-                        this.validateResponse(httpResponse);
-                    } catch (RuntimeException e) {
-                        return false;
-                    }
-                    return true;
-                }
-            });
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public void upload(String url, InputStream fis) throws IOException {
+        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
+        HttpPut put = new HttpPut(url);
+        InputStreamEntity requestEntity = new InputStreamEntity(fis);
+        put.setEntity(requestEntity);
+        webDavSupport.execute(put, new ValidatingResponseHandler<Void>() {
+            @Override
+            public Void handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return null;
+            }
+        });
     }
 }

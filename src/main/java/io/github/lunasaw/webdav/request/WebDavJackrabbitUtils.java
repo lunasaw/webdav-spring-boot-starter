@@ -8,12 +8,15 @@ import com.luna.common.utils.Assert;
 import com.luna.common.xml.XmlUtil;
 import io.github.lunasaw.webdav.WebDavSupport;
 import io.github.lunasaw.webdav.entity.MultiStatusResult;
+import io.github.lunasaw.webdav.exception.WebDavException;
 import io.github.lunasaw.webdav.hander.LockResponseHandler;
 import io.github.lunasaw.webdav.hander.MultiStatusHandler;
+import io.github.lunasaw.webdav.hander.ValidatingResponseHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.client.methods.*;
 import org.apache.jackrabbit.webdav.lock.LockInfo;
@@ -46,8 +49,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        boolean exist = exist(webDavSupport.getBasePath());
-        Assert.isTrue(exist, "路径不存在");
+        exist(webDavSupport.getBasePath());
     }
 
     public boolean move(String url, String dest, boolean overwrite) {
@@ -128,6 +130,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         MultiStatusResult list = list(url, DavConstants.PROPFIND_BY_PROPERTY, Constant.NUMBER_ONE);
         return Optional.ofNullable(list.getMultistatus()).map(MultiStatusResult.Multistatus::getResponse).map(CollectionUtils::isNotEmpty)
             .orElse(false);
+
     }
 
     /**
@@ -225,72 +228,6 @@ public class WebDavJackrabbitUtils implements InitializingBean {
     }
 
     /**
-     * 使用现有锁继续锁定
-     *
-     * @param url
-     * @return
-     */
-    public String lockExist(String url, String... lockTokens) {
-        return refreshLock(url, Integer.MAX_VALUE, lockTokens);
-    }
-
-    public String lockExclusive(String url) {
-        return lockExclusive(url, null, Integer.MAX_VALUE);
-    }
-
-    public String lockExclusive(String url, long timeout) {
-        return lockExclusive(url, null, timeout);
-    }
-
-    public String lockExclusive(String url, String owner, long timeout) {
-        return lockExclusive(url, owner, timeout, true);
-    }
-
-    public String lockExclusive(String url, String owner, long timeout, boolean isDeep) {
-        return lockExclusive(url, Type.WRITE, owner, timeout, isDeep);
-    }
-
-    /**
-     * 独占锁 任何其他会话都无法修改该节点。
-     *
-     * @return
-     */
-    public String lockExclusive(String url, Type type, String owner, long timeout, boolean isDeep) {
-        return lock(url, Scope.EXCLUSIVE, type, owner, timeout, isDeep);
-    }
-
-    /**
-     * 共享锁 允许其他会话读取节点，但不允许修改节点。
-     *
-     * @return
-     */
-    public String lockShare(String url, Type type, String owner, long timeout, boolean isDeep) {
-        return lock(url, Scope.SHARED, type, owner, timeout, isDeep);
-    }
-
-    /**
-     * @param url 路径
-     * @param scope 锁定类型 {@link Scope}
-     * @param type WRITE：表示只有写访问权限的锁定。
-     * @param owner
-     * @param timeout
-     * @param isDeep
-     * @return
-     */
-    public String lock(String url, Scope scope, Type type, String owner, Long timeout, boolean isDeep) {
-        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
-        try {
-            LockInfo lockInfo = new LockInfo(scope, type, owner, timeout, isDeep);
-            HttpLock httpLock = new HttpLock(url, lockInfo);
-            String response = webDavSupport.execute(httpLock, new LockResponseHandler());
-
-            return response;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
      * 续锁
      *
      * @param url 路径
@@ -298,26 +235,41 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * @param lockTokens 上次一次的token
      * @return
      */
-    public String refreshLock(String url, long timeout, String... lockTokens) {
-        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
-        try {
-            HttpLock httpLock = new HttpLock(url, timeout, lockTokens);
-            HttpResponse response = webDavSupport.executeWithContext(httpLock);
-            return httpLock.getLockToken(response);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public String refreshLock(String url, long timeout, String... lockTokens) throws IOException {
+        HttpLock httpLock = new HttpLock(url, timeout, lockTokens);
+        return webDavSupport.execute(httpLock, new LockResponseHandler());
     }
 
-    public boolean unLock(String url, String lockToken) {
+    /**
+     * @param url 路径
+     * @param scope 锁定类型 {@link Scope}
+     * @param type WRITE：表示只有写访问权限的锁定。
+     * @param owner
+     * @param timeout 超时时间
+     * @param isDeep
+     * @return
+     */
+    public String lock(String url, Scope scope, Type type, String owner, Long timeout, boolean isDeep) throws IOException {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
-        try {
-            HttpUnlock lockInfo = new HttpUnlock(url, lockToken);
-            HttpResponse response = webDavSupport.executeWithContext(lockInfo);
-            return lockInfo.succeeded(response);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        LockInfo lockInfo = new LockInfo(scope, type, owner, timeout, isDeep);
+        HttpLock httpLock = new HttpLock(url, lockInfo);
+        return webDavSupport.execute(httpLock, new LockResponseHandler());
     }
 
+    /**
+     * 解锁
+     * @param url
+     * @param lockToken
+     * @return
+     */
+    public boolean unLock(String url, String lockToken) throws IOException {
+        HttpUnlock lockInfo = new HttpUnlock(url, lockToken);
+        webDavSupport.execute(lockInfo, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return lockInfo.succeeded(httpResponse);
+            }
+        });
+    }
 }
