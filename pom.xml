@@ -13,7 +13,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <spring-boot.version>2.7.8</spring-boot.version>
         <jackrabbit-webdav.version>2.21.15</jackrabbit-webdav.version>
-        <luna-common.version>2.3.4</luna-common.version>
+        <luna-common.version>2.3.9</luna-common.version>
         <github.username>lunasaw</github.username>
     </properties>
 
@@ -69,6 +69,13 @@
             <groupId>io.github.lunasaw</groupId>
             <artifactId>luna-common</artifactId>
             <version>${luna-common.version}</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.json/json -->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20230227</version>
         </dependency>
     </dependencies>
 
