@@ -63,36 +63,6 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         }
     }
 
-    /**
-     * 文件树创建文件
-     *
-     * @param basePath 基础路径
-     * @param paths 新建路径
-     * @param created 父级目录不存在 是否创建
-     * @return
-     */
-    public String makeDirs(String basePath, Collection<String> paths, boolean created) {
-        StringBuilder stringBuilder = new StringBuilder(basePath);
-
-        for (String path : paths) {
-            if (StringUtils.isBlank(path)) {
-                continue;
-            }
-            stringBuilder.append(path);
-            if (!path.endsWith(StrPoolConstant.SLASH)) {
-                stringBuilder.append(StrPoolConstant.SLASH);
-            }
-            if (!exist(stringBuilder.toString())) {
-                makeDir(stringBuilder.toString());
-            }
-        }
-
-        return stringBuilder.toString();
-    }
-
-    public boolean makeDir(String url) {
-        return mkdir(url);
-    }
 
     /**
      * 创建文件夹
@@ -115,38 +85,30 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         }
     }
 
-    public MultiStatusResult list(String url) {
-        MultiStatusResult list = list(url, DavConstants.PROPFIND_ALL_PROP, Constant.NUMBER_ONE);
-        return list;
-    }
-
     /**
      * 判断文件或者文件夹是否存在
      *
      * @param url 路径
      * @return
      */
-    public boolean exist(String url) {
+    public boolean exist(String url) throws IOException {
         MultiStatusResult list = list(url, DavConstants.PROPFIND_BY_PROPERTY, Constant.NUMBER_ONE);
         return Optional.ofNullable(list.getMultistatus()).map(MultiStatusResult.Multistatus::getResponse).map(CollectionUtils::isNotEmpty)
             .orElse(false);
-
     }
 
     /**
-     * 判断文件或者文件夹是否存在
-     *
+     *  判断文件或者文件夹是否存在
      * @param url 网络路径
+     * @param propfindType
+     * @param dep {@link org.apache.jackrabbit.webdav.header.DepthHeader}
+     * {@link  DavConstants}
      * @return
      */
-    public MultiStatusResult list(String url, int propfindType, int dep) {
+    public MultiStatusResult list(String url, int propfindType, int dep) throws IOException {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
-        try {
-            HttpPropfind propfind = new HttpPropfind(url, propfindType, dep);
-            return webDavSupport.execute(propfind, new MultiStatusHandler());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        HttpPropfind propfind = new HttpPropfind(url, propfindType, dep);
+        return webDavSupport.execute(propfind, new MultiStatusHandler());
     }
 
     public Set<String> getSearchGrammars(String url) {
@@ -264,7 +226,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      */
     public boolean unLock(String url, String lockToken) throws IOException {
         HttpUnlock lockInfo = new HttpUnlock(url, lockToken);
-        webDavSupport.execute(lockInfo, new ValidatingResponseHandler<Boolean>() {
+        return webDavSupport.execute(lockInfo, new ValidatingResponseHandler<Boolean>() {
             @Override
             public Boolean handleResponse(HttpResponse httpResponse) {
                 this.validateResponse(httpResponse);

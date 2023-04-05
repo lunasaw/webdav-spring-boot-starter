@@ -11,10 +11,12 @@ import com.luna.common.text.StringTools;
 import com.luna.common.utils.Assert;
 import com.luna.common.utils.ObjectUtils;
 import io.github.lunasaw.webdav.WebDavSupport;
+import io.github.lunasaw.webdav.entity.MultiStatusResult;
 import io.github.lunasaw.webdav.hander.LockResponseHandler;
 import io.github.lunasaw.webdav.properties.WebDavConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.client.methods.HttpLock;
 import org.apache.jackrabbit.webdav.lock.LockInfo;
 import org.apache.jackrabbit.webdav.lock.Scope;
@@ -29,6 +31,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -52,6 +55,35 @@ public class WebDavUtils {
 
     @Autowired
     private WebDavSupport         webDavSupport;
+
+    /**
+     * 文件树创建文件
+     *
+     * @param basePath 基础路径
+     * @param paths 新建路径
+     * @param created 父级目录不存在 是否创建
+     * @return
+     */
+    public String makeDirs(String basePath, Collection<String> paths, boolean created) {
+        StringBuilder stringBuilder = new StringBuilder(basePath);
+
+        for (String path : paths) {
+            if (StringUtils.isBlank(path)) {
+                continue;
+            }
+            stringBuilder.append(path);
+            if (!path.endsWith(StrPoolConstant.SLASH)) {
+                stringBuilder.append(StrPoolConstant.SLASH);
+            }
+            if (!exist(stringBuilder.toString())) {
+                if (created){
+                    mkdir(stringBuilder.toString());
+                }
+            }
+        }
+
+        return stringBuilder.toString();
+    }
 
     /**
      * 上传文件 路径不存在则递归创建目录 不能覆盖
@@ -126,8 +158,7 @@ public class WebDavUtils {
 
         String scopePath = basePath + scope + StrPoolConstant.SLASH;
         if (!exist(scopePath)) {
-            if (!webDavJackrabbitUtils.makeDir(scopePath)) {
-                log.warn("upload::scope = {}, directoryPath = {}, created = {}, cover = {}", scope, directoryPath, created, cover);
+            if (!mkdir(scopePath)) {
                 return false;
             }
         }
@@ -137,7 +168,7 @@ public class WebDavUtils {
         }
 
         // 创建文件夹
-        String lastDir = webDavJackrabbitUtils.makeDirs(scopePath, filePaths, created);
+        String lastDir = makeDirs(scopePath, filePaths, created);
 
         ByteArrayInputStream inputStream = IoUtil.toStream(file);
 
@@ -266,11 +297,36 @@ public class WebDavUtils {
         return lock(url, Scope.SHARED, type, owner, timeout, isDeep);
     }
 
+    public MultiStatusResult listAllProp(String url, int dep) {
+        return list(url, DavConstants.PROPFIND_ALL_PROP, dep);
+    }
+
+    public MultiStatusResult listByProperty(String url, int dep) {
+        return list(url, DavConstants.PROPFIND_BY_PROPERTY, dep);
+    }
+
+    public MultiStatusResult listPropfindPropertyNames(String url, int dep) {
+        return list(url, DavConstants.PROPFIND_PROPERTY_NAMES, dep);
+    }
+
+    public MultiStatusResult listPropfindAllPropInclude(String url, int dep) {
+        return list(url, DavConstants.PROPFIND_ALL_PROP_INCLUDE, dep);
+    }
 
     // =============================================
 
-    public void delete(String url) {
-        webDavBaseUtils.delete(url);
+    public MultiStatusResult list(String url) {
+        MultiStatusResult list = list(url, DavConstants.PROPFIND_ALL_PROP_INCLUDE, Constant.NUMBER_ZERO);
+        return list;
+    }
+
+    public boolean delete(String url) {
+        try {
+            webDavBaseUtils.delete(url);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public boolean upload(String url, InputStream fis) {
@@ -318,5 +374,19 @@ public class WebDavUtils {
             log.error("unLock::url = {}, lockToken = {} ", url, lockToken, e);
             return false;
         }
+    }
+
+
+    public MultiStatusResult list(String url, int propfindType, int dep) {
+        try {
+            return webDavJackrabbitUtils.list(url, propfindType, dep);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+
+    public boolean mkdir(String url) {
+        return webDavJackrabbitUtils.mkdir(url);
     }
 }

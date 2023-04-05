@@ -45,7 +45,7 @@ public class MultiStatusResult {
     public static class Propstat {
 
         @JSONField(name = "D:prop")
-        private String dProp;
+        private PropResult.Prop prop;
 
         @JSONField(name = "D:status")
         private String dStatus;
