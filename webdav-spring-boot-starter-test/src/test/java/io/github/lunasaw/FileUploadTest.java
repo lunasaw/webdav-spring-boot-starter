@@ -86,7 +86,7 @@ public class FileUploadTest extends BaseTest {
     @Test
     public void lock_continue_test() {
         String filePath = webDavSupport.getBasePath();
-        String token = "opaquelocktoken:147aebb9-27f9-4b70-baf3-151ad354420b";
+        String token = "opaquelocktoken:f81d537e-2907-4a17-a7ff-670d19763bdf";
         boolean exist = webDavJackrabbitUtils.exist(filePath + "test/buy_logo.jpeg");
         System.out.println(exist);
         String s = webDavJackrabbitUtils.lockExist(filePath + "test/buy_logo.jpeg", 500, token);

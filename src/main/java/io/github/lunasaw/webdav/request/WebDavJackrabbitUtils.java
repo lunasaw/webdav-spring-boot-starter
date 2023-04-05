@@ -148,18 +148,6 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         }
     }
 
-    public static void main(String[] args) {
-        String result = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"//
-                + "<returnsms>"//
-                + "<returnstatus>Success（成功）</returnstatus>"//
-                + "<message>ok</message>"//
-                + "<remainpoint>1490</remainpoint>"//
-                + "<taskID>885</taskID>"//
-                + "<successCounts>1</successCounts>"//
-                + "</returnsms>";
-        MultiStatusResult.Multistatus statusResult = XmlUtil.xmlToBean(result, MultiStatusResult.Multistatus.class);
-    }
-
     public Set<String> getSearchGrammars(String url) {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         try {
@@ -276,8 +264,8 @@ public class WebDavJackrabbitUtils implements InitializingBean {
     }
 
     /**
-     * @param url
-     * @param scope
+     * @param url 路径
+     * @param scope   锁定类型 {@link Scope}
      * @param type    WRITE：表示只有写访问权限的锁定。
      * @param owner
      * @param timeout
