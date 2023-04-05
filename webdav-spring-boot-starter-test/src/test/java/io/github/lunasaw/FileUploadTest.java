@@ -9,6 +9,7 @@ import io.github.lunasaw.webdav.entity.MultiStatusResult;
 import io.github.lunasaw.webdav.request.WebDavBaseUtils;
 import io.github.lunasaw.webdav.request.WebDavJackrabbitUtils;
 import io.github.lunasaw.webdav.request.WebDavUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,15 +17,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.UUID;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author chenzhangyue
  * 2023/4/2
  */
+@Slf4j
 public class FileUploadTest extends BaseTest {
-
-    @Autowired
-    private WebDavBaseUtils       webDavBaseUtils;
 
     @Autowired
     private WebDavUtils           webDavUtils;
@@ -40,7 +42,7 @@ public class FileUploadTest extends BaseTest {
         boolean test =
             webDavUtils.upload("/images/buy_logo22.jpeg", "/Users/weidian/compose/images/buy_logo.jpeg");
         Assert.isTrue(test);
-        boolean exist = webDavJackrabbitUtils.exist("http://localhost:8080/webdav/project/test/images/buy_logo.jpeg");
+        boolean exist = webDavUtils.exist("http://localhost:8080/webdav/project/test/images/buy_logo.jpeg");
         Assert.isTrue(exist);
     }
 
@@ -64,35 +66,47 @@ public class FileUploadTest extends BaseTest {
 
     @Test
     public void exist_list()  {
-        MultiStatusResult list = webDavJackrabbitUtils.list("http://localhost:8080/webdav/project/");
-        System.out.println(JSON.toJSONString(list));
+        String filePath = webDavSupport.getBasePath();
+        MultiStatusResult list = webDavUtils.list(filePath + "test/images/");
+        System.out.println(JSON.toJSONString(list.getMultistatus().getResponse()));
     }
 
     @Test
     public void unlock_test() {
 
-        String token = "opaquelocktoken:147aebb9-27f9-4b70-baf3-151ad354420b";
-        boolean lock = webDavJackrabbitUtils.unLock(webDavSupport.getBasePath() + "test/buy_logo.jpeg", token);
+        String token = "opaquelocktoken:32e098d5-ad9d-4509-9106-d05445472562";
+        boolean lock = webDavUtils.unLock(webDavSupport.getBasePath() + "test/images/", token);
         System.out.println(lock);
+
     }
 
     @Test
     public void lock_first_test() {
         String filePath = webDavSupport.getBasePath();
-        String luna = webDavJackrabbitUtils.lockExclusive(filePath + "test/buy_logo.jpeg", "", 900);
-        System.out.println(luna);
+        String url = String.format(filePath + "test/images/", UUID.randomUUID());
+        String token = webDavUtils.lockExclusive(url);
+        assertTrue(token.startsWith("opaquelocktoken:"));
+        boolean delete = webDavUtils.delete(url);
+        assertTrue(delete);
     }
 
     @Test
-    public void lock_continue_test() {
+    public void create_test() {
         String filePath = webDavSupport.getBasePath();
-        String token = "opaquelocktoken:147aebb9-27f9-4b70-baf3-151ad354420b";
-        boolean exist = webDavJackrabbitUtils.exist(filePath + "test/buy_logo.jpeg");
-        System.out.println(exist);
-        String s = webDavJackrabbitUtils.lockExist(filePath + "test/buy_logo.jpeg", 500, token);
-        System.out.println(s);
-        boolean exist1 = webDavJackrabbitUtils.makeDir(filePath + "test4");
-        System.out.println(exist1);
+        String url = String.format(filePath + "test/images/hhh/%s", UUID.randomUUID());
+        webDavUtils.upload(url, new byte[0], true);
+        assertTrue(webDavUtils.exist(url));
+    }
+
+    @Test
+    public void lock_second_test() {
+        String filePath = webDavSupport.getBasePath();
+        String url = String.format(filePath + "test/%s", UUID.randomUUID());
+        webDavUtils.upload(url, new byte[0], true);
+        String token = webDavUtils.lockExclusive(url, 5000);
+        String result = webDavUtils.refreshLock(url, 5000 * 20, token);
+        assertTrue(token.startsWith("opaquelocktoken:"));
+        assertTrue(token.equals(result));
     }
 
     @Test

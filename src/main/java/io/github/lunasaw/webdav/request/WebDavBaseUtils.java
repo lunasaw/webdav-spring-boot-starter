@@ -5,10 +5,12 @@ import java.io.*;
 import com.alibaba.fastjson2.JSON;
 import com.luna.common.utils.Assert;
 import io.github.lunasaw.webdav.WebDavSupport;
+import io.github.lunasaw.webdav.hander.ValidatingResponseHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.InputStreamEntity;
 import com.luna.common.file.FileTools;
@@ -33,18 +35,21 @@ public class WebDavBaseUtils {
      * @param url 文件路径
      * @return
      */
-    public boolean delete(String url) {
+    public void delete(String url) {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         try {
             HttpDelete delete = new HttpDelete(url);
-            HttpResponse httpResponse = webDavSupport.getClient().execute(delete);
-            int statusCode = httpResponse.getStatusLine().getStatusCode();
-            return HttpStatus.SC_NO_CONTENT == statusCode;
+            webDavSupport.execute(delete, new ValidatingResponseHandler<Void>() {
+                @Override
+                public Void handleResponse(HttpResponse httpResponse) {
+                    this.validateResponse(httpResponse);
+                    return null;
+                }
+            });
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
-
 
     /**
      * 下载文件
@@ -74,20 +79,17 @@ public class WebDavBaseUtils {
      * @param fis 文件流
      * @return
      */
-    public boolean upload(String url, InputStream fis) {
-        try {
-            HttpPut put = new HttpPut(url);
-            InputStreamEntity requestEntity = new InputStreamEntity(fis);
-            put.setEntity(requestEntity);
-            HttpResponse response = webDavSupport.executeWithContext(put);
-            int status = response.getStatusLine().getStatusCode();
-            if (status != HttpStatus.SC_CREATED){
-                log.warn("upload::url = {}, response = {}", url, JSON.toJSONString(response));
-                return false;
+    public void upload(String url, InputStream fis) throws IOException {
+        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
+        HttpPut put = new HttpPut(url);
+        InputStreamEntity requestEntity = new InputStreamEntity(fis);
+        put.setEntity(requestEntity);
+        webDavSupport.execute(put, new ValidatingResponseHandler<Void>() {
+            @Override
+            public Void handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return null;
             }
-            return true;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        });
     }
 }

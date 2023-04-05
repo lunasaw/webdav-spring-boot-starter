@@ -38,15 +38,17 @@ public class MultiStatusResult {
 
         @JSONField(name = "D:propstat")
         private Propstat propstat;
-        @Data
-        public static class Propstat {
-
-            @JSONField(name = "D:prop")
-            private String dProp;
-
-            @JSONField(name = "D:status")
-            private String dStatus;
-        }
 
     }
+
+    @Data
+    public static class Propstat {
+
+        @JSONField(name = "D:prop")
+        private PropResult.Prop prop;
+
+        @JSONField(name = "D:status")
+        private String dStatus;
+    }
+
 }
