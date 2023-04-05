@@ -20,22 +20,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
+import com.alibaba.fastjson2.JSON;
 import com.luna.common.io.IoUtil;
+import io.github.lunasaw.webdav.entity.MultiStatusResult;
 import io.github.lunasaw.webdav.exception.WebDavException;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
+import org.json.JSONObject;
+import org.json.XML;
 
 /**
  * {@link org.apache.http.client.ResponseHandler}
  *
  * @author mirko
  */
-public class ResponseHandler extends ValidatingResponseHandler<String> {
+public class MultiStatusHandler extends ValidatingResponseHandler<MultiStatusResult> {
     @Override
-    public String handleResponse(HttpResponse response) throws IOException {
-        super.validateResponse(response);
-
+    public MultiStatusResult handleResponse(HttpResponse response) throws IOException {
         // Process the response from the server.
         HttpEntity entity = response.getEntity();
         StatusLine statusLine = response.getStatusLine();
@@ -58,8 +60,10 @@ public class ResponseHandler extends ValidatingResponseHandler<String> {
      * @return Multistatus element parsed from the stream
      * @throws IOException When there is a JAXB error
      */
-    protected String getMultistatus(InputStream stream)
+    protected MultiStatusResult getMultistatus(InputStream stream)
         throws IOException {
-        return IoUtil.read(stream, Charset.defaultCharset());
+        String read = IoUtil.read(stream, Charset.defaultCharset());
+        JSONObject jsonObject = XML.toJSONObject(read);
+        return JSON.parseObject(jsonObject.toString(), MultiStatusResult.class);
     }
 }

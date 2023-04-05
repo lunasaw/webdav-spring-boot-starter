@@ -8,13 +8,13 @@ import com.luna.common.utils.Assert;
 import com.luna.common.xml.XmlUtil;
 import io.github.lunasaw.webdav.WebDavSupport;
 import io.github.lunasaw.webdav.entity.MultiStatusResult;
-import io.github.lunasaw.webdav.hander.ResponseHandler;
+import io.github.lunasaw.webdav.hander.LockResponseHandler;
+import io.github.lunasaw.webdav.hander.MultiStatusHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.jackrabbit.webdav.DavConstants;
-import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.*;
 import org.apache.jackrabbit.webdav.lock.LockInfo;
 import org.apache.jackrabbit.webdav.lock.Scope;
@@ -65,8 +65,8 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * 文件树创建文件
      *
      * @param basePath 基础路径
-     * @param paths    新建路径
-     * @param created  父级目录不存在 是否创建
+     * @param paths 新建路径
+     * @param created 父级目录不存在 是否创建
      * @return
      */
     public String makeDirs(String basePath, Collection<String> paths, boolean created) {
@@ -126,7 +126,8 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      */
     public boolean exist(String url) {
         MultiStatusResult list = list(url, DavConstants.PROPFIND_BY_PROPERTY, Constant.NUMBER_ONE);
-        return Optional.ofNullable(list.getMultistatus()).map(MultiStatusResult.Multistatus::getResponse).map(CollectionUtils::isNotEmpty).orElse(false);
+        return Optional.ofNullable(list.getMultistatus()).map(MultiStatusResult.Multistatus::getResponse).map(CollectionUtils::isNotEmpty)
+            .orElse(false);
     }
 
     /**
@@ -139,10 +140,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         try {
             HttpPropfind propfind = new HttpPropfind(url, propfindType, dep);
-            String execute = webDavSupport.execute(propfind, new ResponseHandler());
-            JSONObject jsonObject = XML.toJSONObject(execute);
-            MultiStatusResult multiStatusResult = JSON.parseObject(jsonObject.toString(), MultiStatusResult.class);
-            return multiStatusResult;
+            return webDavSupport.execute(propfind, new MultiStatusHandler());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -175,10 +173,10 @@ public class WebDavJackrabbitUtils implements InitializingBean {
     /**
      * 文件拷贝
      *
-     * @param url       原始地址
-     * @param dest      目的地址
+     * @param url 原始地址
+     * @param dest 目的地址
      * @param overwrite 是否覆盖
-     * @param shallow   是否递归地复制所有子资源，包括子目录和它们的子项。 true 浅复制 false 深复制
+     * @param shallow 是否递归地复制所有子资源，包括子目录和它们的子项。 true 浅复制 false 深复制
      * @return
      */
     public boolean copy(String url, String dest, boolean overwrite, boolean shallow) {
@@ -230,11 +228,18 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * 使用现有锁继续锁定
      *
      * @param url
-     * @param timeout
      * @return
      */
-    public String lockExist(String url, long timeout, String... lockTokens) {
-        return lock(url, timeout, lockTokens);
+    public String lockExist(String url, String... lockTokens) {
+        return refreshLock(url, Integer.MAX_VALUE, lockTokens);
+    }
+
+    public String lockExclusive(String url) {
+        return lockExclusive(url, null, Integer.MAX_VALUE);
+    }
+
+    public String lockExclusive(String url, long timeout) {
+        return lockExclusive(url, null, timeout);
     }
 
     public String lockExclusive(String url, String owner, long timeout) {
@@ -265,20 +270,21 @@ public class WebDavJackrabbitUtils implements InitializingBean {
 
     /**
      * @param url 路径
-     * @param scope   锁定类型 {@link Scope}
-     * @param type    WRITE：表示只有写访问权限的锁定。
+     * @param scope 锁定类型 {@link Scope}
+     * @param type WRITE：表示只有写访问权限的锁定。
      * @param owner
      * @param timeout
      * @param isDeep
      * @return
      */
-    public String lock(String url, Scope scope, Type type, String owner, long timeout, boolean isDeep) {
+    public String lock(String url, Scope scope, Type type, String owner, Long timeout, boolean isDeep) {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         try {
             LockInfo lockInfo = new LockInfo(scope, type, owner, timeout, isDeep);
             HttpLock httpLock = new HttpLock(url, lockInfo);
-            HttpResponse response = webDavSupport.executeWithContext(httpLock);
-            return httpLock.getLockToken(response);
+            String response = webDavSupport.execute(httpLock, new LockResponseHandler());
+
+            return response;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -287,12 +293,12 @@ public class WebDavJackrabbitUtils implements InitializingBean {
     /**
      * 续锁
      *
-     * @param url        路径
-     * @param timeout    超时
+     * @param url 路径
+     * @param timeout 超时
      * @param lockTokens 上次一次的token
      * @return
      */
-    public String lock(String url, long timeout, String... lockTokens) {
+    public String refreshLock(String url, long timeout, String... lockTokens) {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         try {
             HttpLock httpLock = new HttpLock(url, timeout, lockTokens);

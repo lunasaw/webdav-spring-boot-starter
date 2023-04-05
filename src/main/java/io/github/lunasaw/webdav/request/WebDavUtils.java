@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 /**
  * @author weidian
- * @description
+ * @description Http基础协议处理
  * @date 2023/4/4
  */
 @Component
@@ -136,9 +136,8 @@ public class WebDavUtils {
         String absoluteFilePath = lastDir + fileName;
         if (webDavJackrabbitUtils.exist(absoluteFilePath)) {
             if (cover) {
-                if (webDavBaseUtils.delete(absoluteFilePath)) {
-                    return webDavBaseUtils.upload(absoluteFilePath, inputStream);
-                }
+                webDavBaseUtils.delete(absoluteFilePath);
+                return webDavBaseUtils.upload(absoluteFilePath, inputStream);
             } else {
                 return false;
             }
