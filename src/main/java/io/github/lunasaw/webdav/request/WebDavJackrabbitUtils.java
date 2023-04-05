@@ -1,32 +1,36 @@
 package io.github.lunasaw.webdav.request;
 
-import com.alibaba.fastjson.JSON;
+import ch.qos.logback.core.joran.spi.XMLUtil;
+import com.alibaba.fastjson2.JSON;
 import com.luna.common.constant.Constant;
 import com.luna.common.constant.StrPoolConstant;
 import com.luna.common.utils.Assert;
+import com.luna.common.xml.XmlUtil;
 import io.github.lunasaw.webdav.WebDavSupport;
+import io.github.lunasaw.webdav.entity.MultiStatusResult;
 import io.github.lunasaw.webdav.hander.ResponseHandler;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
-import org.apache.http.entity.StringEntity;
 import org.apache.jackrabbit.webdav.DavConstants;
-import org.apache.jackrabbit.webdav.DavResource;
-import org.apache.jackrabbit.webdav.DavServletResponse;
+import org.apache.jackrabbit.webdav.MultiStatusResponse;
 import org.apache.jackrabbit.webdav.client.methods.*;
 import org.apache.jackrabbit.webdav.lock.LockInfo;
 import org.apache.jackrabbit.webdav.lock.Scope;
 import org.apache.jackrabbit.webdav.lock.Type;
+import org.json.JSONObject;
+import org.json.XML;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.w3c.dom.Document;
 
 import javax.xml.ws.Response;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -61,8 +65,8 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * 文件树创建文件
      *
      * @param basePath 基础路径
-     * @param paths 新建路径
-     * @param created 父级目录不存在 是否创建
+     * @param paths    新建路径
+     * @param created  父级目录不存在 是否创建
      * @return
      */
     public String makeDirs(String basePath, Collection<String> paths, boolean created) {
@@ -109,8 +113,9 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         }
     }
 
-    public boolean list(String url) {
-        return list(url, DavConstants.PROPFIND_ALL_PROP, Constant.NUMBER_ONE);
+    public MultiStatusResult list(String url) {
+        MultiStatusResult list = list(url, DavConstants.PROPFIND_ALL_PROP, Constant.NUMBER_ONE);
+        return list;
     }
 
     /**
@@ -120,7 +125,8 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * @return
      */
     public boolean exist(String url) {
-        return list(url, DavConstants.PROPFIND_BY_PROPERTY, Constant.NUMBER_ONE);
+        MultiStatusResult list = list(url, DavConstants.PROPFIND_BY_PROPERTY, Constant.NUMBER_ONE);
+        return Optional.ofNullable(list.getMultistatus()).map(MultiStatusResult.Multistatus::getResponse).map(CollectionUtils::isNotEmpty).orElse(false);
     }
 
     /**
@@ -129,16 +135,29 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * @param url 网络路径
      * @return
      */
-    public boolean list(String url, int propfindType, int dep) {
+    public MultiStatusResult list(String url, int propfindType, int dep) {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         try {
             HttpPropfind propfind = new HttpPropfind(url, propfindType, dep);
             String execute = webDavSupport.execute(propfind, new ResponseHandler());
-            System.out.println(execute);
-            return true;
+            JSONObject jsonObject = XML.toJSONObject(execute);
+            MultiStatusResult multiStatusResult = JSON.parseObject(jsonObject.toString(), MultiStatusResult.class);
+            return multiStatusResult;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static void main(String[] args) {
+        String result = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"//
+                + "<returnsms>"//
+                + "<returnstatus>Success（成功）</returnstatus>"//
+                + "<message>ok</message>"//
+                + "<remainpoint>1490</remainpoint>"//
+                + "<taskID>885</taskID>"//
+                + "<successCounts>1</successCounts>"//
+                + "</returnsms>";
+        MultiStatusResult.Multistatus statusResult = XmlUtil.xmlToBean(result, MultiStatusResult.Multistatus.class);
     }
 
     public Set<String> getSearchGrammars(String url) {
@@ -168,10 +187,10 @@ public class WebDavJackrabbitUtils implements InitializingBean {
     /**
      * 文件拷贝
      *
-     * @param url 原始地址
-     * @param dest 目的地址
+     * @param url       原始地址
+     * @param dest      目的地址
      * @param overwrite 是否覆盖
-     * @param shallow 是否递归地复制所有子资源，包括子目录和它们的子项。 true 浅复制 false 深复制
+     * @param shallow   是否递归地复制所有子资源，包括子目录和它们的子项。 true 浅复制 false 深复制
      * @return
      */
     public boolean copy(String url, String dest, boolean overwrite, boolean shallow) {
@@ -187,7 +206,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
 
     /**
      * 给资源加锁
-     * 
+     *
      * @param url 原始地址
      * @return
      */
@@ -204,7 +223,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
 
     /**
      * 给资源解锁
-     * 
+     *
      * @param url 原始地址
      * @return
      */
@@ -221,12 +240,12 @@ public class WebDavJackrabbitUtils implements InitializingBean {
 
     /**
      * 使用现有锁继续锁定
-     * 
+     *
      * @param url
      * @param timeout
      * @return
      */
-    public String lockExist(String url,  long timeout, String... lockTokens) {
+    public String lockExist(String url, long timeout, String... lockTokens) {
         return lock(url, timeout, lockTokens);
     }
 
@@ -240,7 +259,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
 
     /**
      * 独占锁 任何其他会话都无法修改该节点。
-     * 
+     *
      * @return
      */
     public String lockExclusive(String url, Type type, String owner, long timeout, boolean isDeep) {
@@ -249,7 +268,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
 
     /**
      * 共享锁 允许其他会话读取节点，但不允许修改节点。
-     * 
+     *
      * @return
      */
     public String lockShare(String url, Type type, String owner, long timeout, boolean isDeep) {
@@ -259,7 +278,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
     /**
      * @param url
      * @param scope
-     * @param type WRITE：表示只有写访问权限的锁定。
+     * @param type    WRITE：表示只有写访问权限的锁定。
      * @param owner
      * @param timeout
      * @param isDeep
@@ -279,9 +298,9 @@ public class WebDavJackrabbitUtils implements InitializingBean {
 
     /**
      * 续锁
-     * 
-     * @param url 路径
-     * @param timeout 超时
+     *
+     * @param url        路径
+     * @param timeout    超时
      * @param lockTokens 上次一次的token
      * @return
      */
@@ -307,27 +326,4 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         }
     }
 
-
-//    protected List<DavResource> propfind(String url, int depth, Propfind body) throws IOException
-//    {
-//        HttpPropfind entity = new HttpPropfind(url);
-//
-//        entity.setDepth(depth < 0 ? "infinity" : Integer.toString(depth));
-//        entity.setEntity(new StringEntity(SardineUtil.toXml(body), UTF_8));
-//        Multistatus multistatus = this.execute(entity, new ResponseHandler());
-//        List<Response> responses = multistatus.getResponse();
-//        List<DavResource> resources = new ArrayList<DavResource>(responses.size());
-//        for (Response response : responses)
-//        {
-//            try
-//            {
-//                resources.add(new DavResource(response));
-//            }
-//            catch (URISyntaxException e)
-//            {
-//                log.warning(String.format("Ignore resource with invalid URI %s", response.getHref().get(0)));
-//            }
-//        }
-//        return resources;
-//    }
 }

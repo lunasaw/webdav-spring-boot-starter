@@ -1,9 +1,11 @@
 package io.github.lunasaw;
 
+import com.alibaba.fastjson2.JSON;
 import com.luna.common.file.FileTools;
 import com.luna.common.text.StringTools;
 import com.luna.common.utils.Assert;
 import io.github.lunasaw.webdav.WebDavSupport;
+import io.github.lunasaw.webdav.entity.MultiStatusResult;
 import io.github.lunasaw.webdav.request.WebDavBaseUtils;
 import io.github.lunasaw.webdav.request.WebDavJackrabbitUtils;
 import io.github.lunasaw.webdav.request.WebDavUtils;
@@ -58,6 +60,12 @@ public class FileUploadTest extends BaseTest {
     @Test
     public void exist_test() throws IOException {
         webDavJackrabbitUtils.exist("http://localhost:8080/webdav/project/");
+    }
+
+    @Test
+    public void exist_list()  {
+        MultiStatusResult list = webDavJackrabbitUtils.list("http://localhost:8080/webdav/project/");
+        System.out.println(JSON.toJSONString(list));
     }
 
     @Test

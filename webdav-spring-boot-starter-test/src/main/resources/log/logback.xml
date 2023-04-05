@@ -2,7 +2,7 @@
 <configuration>
 
     <property name="logRoot" value="log"/>
-    <property name="logLevel" value="info"/>
+    <property name="logLevel" value="${logging.level.root}"/>
     <property name="app" value="webdav"/>
     <property name="pattern" value="%d %p [%t] %c{20} %X{traceId:--} %m%n"/>
     <property name="logHistory" value="7"/>
