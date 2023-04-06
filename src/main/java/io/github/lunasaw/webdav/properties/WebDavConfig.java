@@ -1,6 +1,8 @@
 package io.github.lunasaw.webdav.properties;
 
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -31,4 +33,11 @@ public class WebDavConfig {
      * 项目名称
      */
     private String  scope;
+
+    public static Boolean openLog = false;
+
+
+    public void setOpenLog(Boolean openLog) {
+        WebDavConfig.openLog = openLog;
+    }
 }

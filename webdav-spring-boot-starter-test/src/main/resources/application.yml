@@ -5,4 +5,4 @@ spring:
 logging:
   config: classpath:log/logback.xml
   level:
-    root: info
+    root: INFO

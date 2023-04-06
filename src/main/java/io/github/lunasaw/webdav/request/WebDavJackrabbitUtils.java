@@ -154,7 +154,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         HttpCopy httpCopy = new HttpCopy(url, dest, overwrite, shallow);
         webDavSupport.execute(httpCopy, new ValidatingResponseHandler<Void>() {
             @Override
-            public Void handleResponse(HttpResponse httpResponse) {
+            public Void handleResponse(HttpResponse httpResponse) throws IOException {
                 this.validateResponse(httpResponse);
                 return null;
             }
@@ -235,7 +235,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         HttpUnlock lockInfo = new HttpUnlock(url, lockToken);
         return webDavSupport.execute(lockInfo, new ValidatingResponseHandler<Boolean>() {
             @Override
-            public Boolean handleResponse(HttpResponse httpResponse) {
+            public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
                 this.validateResponse(httpResponse);
                 return lockInfo.succeeded(httpResponse);
             }

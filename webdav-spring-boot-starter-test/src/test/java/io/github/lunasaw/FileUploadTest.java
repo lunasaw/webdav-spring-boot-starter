@@ -43,9 +43,9 @@ public class FileUploadTest extends BaseTest {
     @Test
     public void upload_test() {
         boolean test =
-            webDavUtils.upload("/images/buy_logo22.jpeg", "/Users/weidian/compose/images/buy_logo.jpeg");
+            webDavUtils.upload("luna","/images/buy_logo22.jpeg", "/Users/weidian/compose/images/buy_logo.jpeg");
         Assert.isTrue(test);
-        boolean exist = webDavUtils.exist("http://localhost:8080/webdav/project/test/images/buy_logo.jpeg");
+        boolean exist = webDavUtils.exist("http://localhost:8080/webdav/project/luna/images/buy_logo.jpeg");
         Assert.isTrue(exist);
     }
 
@@ -53,69 +53,76 @@ public class FileUploadTest extends BaseTest {
     public void download_test() {
         String ROUND_FILE_PATH = "/Users/weidian/compose/images/buy_logo_{}.jpeg";
         ROUND_FILE_PATH = StringTools.format(ROUND_FILE_PATH, RandomUtils.nextInt());
-        webDavUtils.download("test", "/images/buy_logo.jpeg", ROUND_FILE_PATH);
+        webDavUtils.download("luna", "/images/buy_logo.jpeg", ROUND_FILE_PATH);
         Assert.isTrue(FileTools.isExists(ROUND_FILE_PATH), ROUND_FILE_PATH + "文件下载错误");
     }
 
     @Test
     public void copy_test() throws IOException {
         String filePath = webDavSupport.getBasePath();
-        boolean copy = webDavUtils.copy(filePath + "/test/", filePath + "/test4/", true, true);
+        boolean copy = webDavUtils.copy(filePath + "/luna/", filePath + "/test4/", true, true);
         assertTrue(copy);
     }
 
     @Test
-    public void exist_test() throws IOException {
-        webDavUtils.exist("http://localhost:8080/webdav/project/");
+    public void test_exist() {
+        boolean exist = webDavUtils.exist(webDavSupport.getBasePath());
+        assertTrue(exist);
     }
 
     @Test
-    public void exist_list()  {
+    public void exist_list() {
         String filePath = webDavSupport.getBasePath();
-        MultiStatusResult list = webDavUtils.list(filePath + "test/images/");
+        MultiStatusResult list = webDavUtils.list(filePath + "luna/images/");
         System.out.println(JSON.toJSONString(list.getMultistatus().getResponse()));
     }
 
     @Test
-    public void unlock_test() {
-
-        String token = "opaquelocktoken:32e098d5-ad9d-4509-9106-d05445472562";
-        boolean lock = webDavUtils.unLock(webDavSupport.getBasePath() + "test/images/", token);
-        System.out.println(lock);
-
-    }
-
-    @Test
     public void lock_first_test() {
-        String filePath = webDavSupport.getBasePath();
-        String url = String.format(filePath + "test/images/", UUID.randomUUID());
-        String token = webDavUtils.lockExclusive(url);
+        String basePath = webDavSupport.getBasePath();
+        String url = String.format("luna/images2/%s", UUID.randomUUID());
+        boolean upload = webDavUtils.uploadAutoScope(url, new byte[] {1});
+        url = basePath + url;
+        assertTrue(upload);
+        String token = webDavUtils.lockExclusive(url, 50000);
         assertTrue(token.startsWith("opaquelocktoken:"));
         boolean delete = webDavUtils.delete(url);
+        assertTrue(!delete);
+        boolean lock = webDavUtils.unLock(url, token);
+        assertTrue(lock);
+        delete = webDavUtils.delete(url);
         assertTrue(delete);
     }
 
     @Test
     public void create_test() {
         String filePath = webDavSupport.getBasePath();
-        String url = String.format(filePath + "test/images/hhh/%s", UUID.randomUUID());
-        webDavUtils.upload(url, new byte[0], true);
-        assertTrue(webDavUtils.exist(url));
+        String url = String.format("images/%s", UUID.randomUUID());
+        webDavUtils.upload("luna",  url, new byte[] {1, 2});
+        assertTrue(webDavUtils.exist(filePath + "luna/" + url));
     }
 
     @Test
     public void lock_second_test() {
         String filePath = webDavSupport.getBasePath();
-        String url = String.format(filePath + "test/%s", UUID.randomUUID());
-        webDavUtils.upload(url, new byte[0], true);
+        String url = String.format("luna/%s", UUID.randomUUID());
+        webDavUtils.uploadAutoScope(url, new byte[] {1}, true);
+        url = filePath + url;
         String token = webDavUtils.lockExclusive(url, 5000);
         String result = webDavUtils.refreshLock(url, 5000 * 20, token);
         assertTrue(token.startsWith("opaquelocktoken:"));
         assertTrue(token.equals(result));
+
+        boolean delete = webDavUtils.delete(url);
+        assertTrue(!delete);
+        boolean lock = webDavUtils.unLock(url, token);
+        assertTrue(lock);
+        delete = webDavUtils.delete(url);
+        assertTrue(delete);
     }
 
     @Test
-    public void atest() {
+    public void test_allow() {
         Set<String> allow = webDavJackrabbitUtils.getAllow(webDavSupport.getBasePath());
         assertTrue(CollectionUtils.isNotEmpty(allow));
     }

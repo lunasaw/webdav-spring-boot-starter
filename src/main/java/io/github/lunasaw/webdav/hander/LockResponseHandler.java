@@ -35,7 +35,7 @@ import org.json.XML;
  */
 public class LockResponseHandler extends ValidatingResponseHandler<String> {
     @Override
-    public String handleResponse(HttpResponse response) {
+    public String handleResponse(HttpResponse response) throws IOException {
         super.validateResponse(response);
 
         // Process the response from the server.
