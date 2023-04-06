@@ -42,10 +42,11 @@ public class FileUploadTest extends BaseTest {
 
     @Test
     public void upload_test() {
+        String url = webDavSupport.getBasePath() + "luna" + "/images/static/buy_logo22.jpeg";
         boolean test =
-            webDavUtils.upload("luna","/images/buy_logo22.jpeg", "/Users/weidian/compose/images/buy_logo.jpeg");
+            webDavUtils.upload("luna","/images/static/buy_logo22.jpeg", "/Users/weidian/compose/images/buy_logo.jpeg");
         Assert.isTrue(test);
-        boolean exist = webDavUtils.exist("http://localhost:8080/webdav/project/luna/images/buy_logo.jpeg");
+        boolean exist = webDavUtils.exist(url);
         Assert.isTrue(exist);
     }
 
@@ -63,6 +64,18 @@ public class FileUploadTest extends BaseTest {
         boolean copy = webDavUtils.copy(filePath + "/luna/", filePath + "/test4/", true, true);
         assertTrue(copy);
     }
+
+    @Test
+    public void copy_move() throws IOException {
+        String filePath = webDavSupport.getBasePath();
+        String url = String.format("testMove3/%s", UUID.randomUUID());
+        webDavUtils.upload("luna",  url, new byte[] {1, 2});
+        assertTrue(webDavUtils.exist(filePath + "luna/" + url));
+        String dest = String.format("testMove3/%s", UUID.randomUUID());
+        boolean copy = webDavUtils.move(filePath + "luna/" + url, filePath + "luna/" + dest, true);
+        assertTrue(copy);
+    }
+
 
     @Test
     public void test_exist() {
