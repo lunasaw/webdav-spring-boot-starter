@@ -2,8 +2,12 @@ package io.github.lunasaw.webdav.request;
 
 import ch.qos.logback.core.joran.spi.XMLUtil;
 import com.alibaba.fastjson2.JSON;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Sets;
 import com.luna.common.constant.Constant;
 import com.luna.common.constant.StrPoolConstant;
+import com.luna.common.io.IoUtil;
+import com.luna.common.net.HttpUtils;
 import com.luna.common.utils.Assert;
 import com.luna.common.xml.XmlUtil;
 import io.github.lunasaw.webdav.WebDavSupport;
@@ -15,8 +19,10 @@ import io.github.lunasaw.webdav.hander.ValidatingResponseHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.util.EntityUtils;
 import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.client.methods.*;
 import org.apache.jackrabbit.webdav.lock.LockInfo;
@@ -31,10 +37,8 @@ import org.w3c.dom.Document;
 
 import javax.xml.ws.Response;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.nio.charset.Charset;
+import java.util.*;
 
 /**
  * @author chenzhangyue
@@ -62,7 +66,6 @@ public class WebDavJackrabbitUtils implements InitializingBean {
             throw new RuntimeException(e);
         }
     }
-
 
     /**
      * 创建文件夹
@@ -98,11 +101,12 @@ public class WebDavJackrabbitUtils implements InitializingBean {
     }
 
     /**
-     *  判断文件或者文件夹是否存在
+     * 判断文件或者文件夹是否存在
+     * 
      * @param url 网络路径
      * @param propfindType
      * @param dep {@link org.apache.jackrabbit.webdav.header.DepthHeader}
-     * {@link  DavConstants}
+     * {@link DavConstants}
      * @return
      */
     public MultiStatusResult list(String url, int propfindType, int dep) throws IOException {
@@ -111,13 +115,15 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         return webDavSupport.execute(propfind, new MultiStatusHandler());
     }
 
-    public Set<String> getSearchGrammars(String url) {
+    public Set<String> getAllow(String url) {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         try {
             HttpOptions httpOptions = new HttpOptions(url);
-            HttpResponse response = webDavSupport.executeWithContext(httpOptions);
-            Set<String> searchGrammars = httpOptions.getSearchGrammars(response);
-            return searchGrammars;
+            HttpResponse response = webDavSupport.execute(httpOptions);
+            Header[] allHeaders = response.getHeaders("Allow");
+            String allowMethod = Arrays.stream(allHeaders).findFirst().map(Header::getValue).orElse(StringUtils.EMPTY);
+            List<String> list = Splitter.on(StrPoolConstant.COMMA).splitToList(allowMethod);
+            return Sets.newHashSet(list);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -144,15 +150,15 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * @param shallow 是否递归地复制所有子资源，包括子目录和它们的子项。 true 浅复制 false 深复制
      * @return
      */
-    public boolean copy(String url, String dest, boolean overwrite, boolean shallow) {
-        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
-        try {
-            HttpCopy httpCopy = new HttpCopy(url, dest, overwrite, shallow);
-            HttpResponse response = webDavSupport.executeWithContext(httpCopy);
-            return httpCopy.succeeded(response);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public void copy(String url, String dest, boolean overwrite, boolean shallow) throws IOException {
+        HttpCopy httpCopy = new HttpCopy(url, dest, overwrite, shallow);
+        webDavSupport.execute(httpCopy, new ValidatingResponseHandler<Void>() {
+            @Override
+            public Void handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return null;
+            }
+        });
     }
 
     /**
@@ -220,6 +226,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
 
     /**
      * 解锁
+     * 
      * @param url
      * @param lockToken
      * @return
