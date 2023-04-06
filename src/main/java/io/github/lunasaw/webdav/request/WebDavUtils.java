@@ -125,6 +125,10 @@ public class WebDavUtils {
         return upload(webDavConfig.getScope(), filePath, file, created, true);
     }
 
+    public boolean upload(String scope, String filePath, byte[] file) {
+        return upload(scope, filePath, file, true);
+    }
+
     public boolean upload(String scope, String filePath, byte[] file, boolean created) {
         return upload(scope, filePath, file, created, true);
     }
