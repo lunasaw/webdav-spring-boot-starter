@@ -313,6 +313,7 @@ public class WebDavUtils {
 
     /**
      * 绝对路径上传
+     * 
      * @param absoluteFilePath
      * @param file
      * @param cover
@@ -427,7 +428,13 @@ public class WebDavUtils {
     }
 
     public boolean mkdir(String url) {
-        return webDavJackrabbitUtils.mkdir(url);
+        checkUrl(url);
+        try {
+            return webDavJackrabbitUtils.mkdir(url);
+        } catch (Exception e) {
+            log.error("mkdir::url = {} ", url, e);
+            return false;
+        }
     }
 
     public boolean copy(String url, String dest, boolean overwrite, boolean shallow) {
@@ -445,7 +452,20 @@ public class WebDavUtils {
         }
     }
 
+    public boolean move(String url, String dest, boolean overwrite) {
+        url = checkUrl(url);
+        dest = checkUrl(dest);
+        try {
+            webDavJackrabbitUtils.move(url, dest, overwrite);
+            return true;
+        } catch (Exception e) {
+            log.error("move::url = {} ", url, e);
+            return false;
+        }
+    }
+
     private static String checkUrlAndFullSlash(String url) {
+        url = StringTools.trim(url);
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         if (!url.endsWith(StrPoolConstant.SLASH)) {
             return StringTools.appendIfMissing(url, StrPoolConstant.SLASH);
@@ -453,7 +473,8 @@ public class WebDavUtils {
         return url;
     }
 
-    private static void checkUrl(String url) {
+    private static String checkUrl(String url) {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
+        return StringTools.trim(url);
     }
 }

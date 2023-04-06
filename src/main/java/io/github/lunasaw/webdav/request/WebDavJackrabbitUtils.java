@@ -56,15 +56,15 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         exist(webDavSupport.getBasePath());
     }
 
-    public boolean move(String url, String dest, boolean overwrite) {
-        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
-        try {
-            HttpMove httpMove = new HttpMove(url, dest, overwrite);
-            HttpResponse httpResponse = webDavSupport.getClient().execute(httpMove);
-            return httpMove.succeeded(httpResponse);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public void move(String url, String dest, boolean overwrite) throws IOException {
+        HttpMove httpMove = new HttpMove(url, dest, overwrite);
+        webDavSupport.execute(httpMove, new ValidatingResponseHandler<Void>() {
+            @Override
+            public Void handleResponse(HttpResponse httpResponse){
+                this.validateResponse(httpResponse);
+                return null;
+            }
+        });
     }
 
     /**
@@ -73,19 +73,16 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * @param url 路径
      * @return
      */
-    public boolean mkdir(String url) {
-        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
-        try {
-            HttpMkcol mkcol = new HttpMkcol(url);
-            HttpResponse response = webDavSupport.executeWithContext(mkcol);
-            boolean succeeded = mkcol.succeeded(response);
-            if (!succeeded) {
-                log.warn("mkdir::url = {}, response = {}", url, JSON.toJSON(response));
+    public boolean mkdir(String url) throws IOException {
+        HttpMkcol mkcol = new HttpMkcol(url);
+        HttpResponse response = webDavSupport.execute(mkcol, new ValidatingResponseHandler<HttpResponse>() {
+            @Override
+            public HttpResponse handleResponse(HttpResponse httpResponse)  {
+                this.validateResponse(httpResponse);
+                return httpResponse;
             }
-            return succeeded;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        });
+        return mkcol.succeeded(response);
     }
 
     /**
