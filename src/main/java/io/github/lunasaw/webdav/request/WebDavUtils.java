@@ -73,28 +73,13 @@ public class WebDavUtils {
                 stringBuilder.append(StrPoolConstant.SLASH);
             }
             if (!exist(stringBuilder.toString())) {
-                if (created){
+                if (created) {
                     mkdir(stringBuilder.toString());
                 }
             }
         }
 
         return stringBuilder.toString();
-    }
-
-    /**
-     * 上传文件 路径不存在则递归创建目录 不能覆盖
-     *
-     * @param url 网络文件路径 注意这里需要是绝对路径
-     * @param file 文件路径
-     * @return
-     */
-    public void upload(URL url, String file, boolean isCreate) {
-        upload(url.toString(), FileTools.read(file), isCreate);
-    }
-
-    public boolean upload(URL url, String file) {
-        return upload(url.toString(), FileTools.read(file), true);
     }
 
     /**
@@ -117,12 +102,31 @@ public class WebDavUtils {
         return upload(scope, filePath, FileTools.read(file), created, true);
     }
 
-    public boolean upload(String url, byte[] file, boolean created) {
-        if (!exist(url) && !created) {
-            return false;
-        }
-        upload(url, IoUtil.toStream(file));
-        return true;
+    public boolean uploadAutoScope(String filePath, byte[] file) {
+        return uploadAutoScope(filePath, file, true);
+    }
+
+    /**
+     * 自动锁定scope上传
+     * 
+     * @param filePath 文件上传后的相对路径
+     * @param file 文件
+     * @return
+     */
+    public boolean uploadAutoScope(String filePath, byte[] file, boolean created) {
+        return upload(StringUtils.EMPTY, filePath, file, created);
+    }
+
+    public boolean uploadDefaultScope(String filePath, byte[] file) {
+        return uploadDefaultScope(filePath, file, true);
+    }
+
+    public boolean uploadDefaultScope(String filePath, byte[] file, boolean created) {
+        return upload(webDavConfig.getScope(), filePath, file, created, true);
+    }
+
+    public boolean upload(String scope, String filePath, byte[] file, boolean created) {
+        return upload(scope, filePath, file, created, true);
     }
 
     public boolean upload(String filePath, String file) {
@@ -133,16 +137,21 @@ public class WebDavUtils {
         return upload(webDavConfig.getScope(), filePath, read, true, true);
     }
 
+    public boolean upload(String scope, String filePath, byte[] file, boolean created, boolean cover) {
+        String scopePath = getScopePath(scope, webDavSupport.getBasePath());
+        return uploadScopePath(scopePath, filePath, file, created, cover);
+    }
+
     /**
      * 上传文件
      *
-     * @param scope 项目scope 最终文件 basePath/${scope}/${filePath}
+     * @param scopePath 项目scope 最终文件 basePath/${scope}/${filePath}
      * @param filePath 文件名【带后缀】
      * @param file 文件地址
      * @return
      */
-    public boolean upload(String scope, String filePath, byte[] file, boolean created, boolean cover) {
-        Assert.notNull(scope, "scope 不能为空");
+    public boolean uploadScopePath(String scopePath, String filePath, byte[] file, boolean created, boolean cover) {
+        Assert.notNull(scopePath, "scope 不能为空");
         Assert.notNull(filePath, "文件名不能为空");
         Assert.notNull(file, "上传文件不能为空");
         Assert.isTrue(!ObjectUtils.isEmpty(file), "文件不能为空");
@@ -151,34 +160,21 @@ public class WebDavUtils {
         String directoryPath = StringTools.removeEnd(filePath, fileName);
         List<String> filePaths =
             Splitter.on(StrPoolConstant.SLASH).splitToList(directoryPath).stream().filter(StringUtils::isNoneBlank).collect(Collectors.toList());
-        String basePath = webDavSupport.getBasePath();
-
-        String scopePath = basePath + scope + StrPoolConstant.SLASH;
-        if (!exist(scopePath)) {
-            if (!mkdir(scopePath)) {
-                return false;
-            }
-        }
-
-        if (filePaths.size() > Constant.NUMBER_ONE && !created) {
-            return false;
-        }
-
-        // 创建文件夹
-        String lastDir = makeDirs(scopePath, filePaths, created);
 
         ByteArrayInputStream inputStream = IoUtil.toStream(file);
 
-        String absoluteFilePath = lastDir + fileName;
-        if (exist(absoluteFilePath)) {
-            if (cover) {
-                delete(absoluteFilePath);
-                upload(absoluteFilePath, inputStream);
-                return true;
-            }
+        // 创建文件夹
+        String lastDir = makeDirs(scopePath, filePaths, created);
+        if (filePaths.size() > Constant.NUMBER_ONE && !created) {
+            return false;
         }
-        upload(absoluteFilePath, inputStream);
-        return true;
+        String absoluteFilePath = lastDir + fileName;
+
+        return upload(absoluteFilePath, inputStream, cover);
+    }
+
+    public boolean upload(String absoluteFilePath, byte[] file) {
+        return upload(absoluteFilePath, file, true);
     }
 
     public void download(URL url, String localPath) {
@@ -249,7 +245,6 @@ public class WebDavUtils {
         webDavBaseUtils.downloadUrl(filePath, lastLocalPath);
     }
 
-
     /**
      * 使用现有锁继续锁定
      *
@@ -312,6 +307,17 @@ public class WebDavUtils {
 
     // =============================================
 
+    /**
+     * 绝对路径上传
+     * @param absoluteFilePath
+     * @param file
+     * @param cover
+     * @return
+     */
+    public boolean upload(String absoluteFilePath, byte[] file, boolean cover) {
+        return upload(absoluteFilePath, IoUtil.toStream(file), cover);
+    }
+
     public MultiStatusResult list(String url) {
         url = checkUrlAndFullSlash(url);
         return list(url, DavConstants.PROPFIND_ALL_PROP_INCLUDE, Constant.NUMBER_ZERO);
@@ -327,8 +333,38 @@ public class WebDavUtils {
         }
     }
 
+    public String getScopePath(String scope, String basePath) {
+        String scopePath = basePath + scope + StrPoolConstant.SLASH;
+        if (!exist(scopePath)) {
+            if (!mkdir(scopePath)) {
+                throw new RuntimeException("mkdir error");
+            }
+        }
+        return scopePath;
+    }
+
+    /**
+     * 上传文件
+     * 
+     * @param stream 文件流
+     * @param cover 是否覆盖
+     * @param absoluteFilePath 带文件名的绝对地址
+     * @return
+     */
+    public boolean upload(String absoluteFilePath, InputStream stream, boolean cover) {
+        if (exist(absoluteFilePath)) {
+            if (cover) {
+                delete(absoluteFilePath);
+                upload(absoluteFilePath, stream);
+                return true;
+            }
+        }
+        upload(absoluteFilePath, stream);
+        return true;
+    }
+
     public boolean upload(String url, InputStream fis) {
-        url = checkUrlAndFullSlash(url);
+        checkUrl(url);
         try {
             webDavBaseUtils.upload(url, fis);
             return true;
@@ -347,11 +383,11 @@ public class WebDavUtils {
         }
     }
 
-    public String lock(String url, Scope scope, Type type, String owner, Long timeout, boolean isDeep){
+    public String lock(String url, Scope scope, Type type, String owner, Long timeout, boolean isDeep) {
         checkUrl(url);
-        exist(url);
         try {
-            return webDavJackrabbitUtils.lock(url, scope, type,owner, timeout, isDeep);
+            webDavJackrabbitUtils.exist(url);
+            return webDavJackrabbitUtils.lock(url, scope, type, owner, timeout, isDeep);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -376,7 +412,6 @@ public class WebDavUtils {
         }
     }
 
-
     public MultiStatusResult list(String url, int propfindType, int dep) {
         url = checkUrlAndFullSlash(url);
         try {
@@ -387,11 +422,9 @@ public class WebDavUtils {
         }
     }
 
-
     public boolean mkdir(String url) {
         return webDavJackrabbitUtils.mkdir(url);
     }
-
 
     public boolean copy(String url, String dest, boolean overwrite, boolean shallow) {
         url = checkUrlAndFullSlash(url);
@@ -410,7 +443,7 @@ public class WebDavUtils {
 
     private static String checkUrlAndFullSlash(String url) {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
-        if (!url.endsWith(StrPoolConstant.SLASH)){
+        if (!url.endsWith(StrPoolConstant.SLASH)) {
             return StringTools.appendIfMissing(url, StrPoolConstant.SLASH);
         }
         return url;

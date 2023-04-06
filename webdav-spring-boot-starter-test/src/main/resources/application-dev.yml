@@ -7,3 +7,4 @@ luna:
     defaultMaxPerRoute: 100
     username: luna # webdav 的basic配置用户名
     password: luna # webdav 的basic配置密码
+    openLog: true

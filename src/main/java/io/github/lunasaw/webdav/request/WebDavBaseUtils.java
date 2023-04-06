@@ -1,8 +1,10 @@
 package io.github.lunasaw.webdav.request;
 
 import java.io.*;
+import java.nio.charset.Charset;
 
 import com.alibaba.fastjson2.JSON;
+import com.luna.common.net.HttpUtils;
 import com.luna.common.utils.Assert;
 import io.github.lunasaw.webdav.WebDavSupport;
 import io.github.lunasaw.webdav.hander.ValidatingResponseHandler;
@@ -14,6 +16,7 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.InputStreamEntity;
 import com.luna.common.file.FileTools;
+import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -41,7 +44,7 @@ public class WebDavBaseUtils {
             HttpDelete delete = new HttpDelete(url);
             webDavSupport.execute(delete, new ValidatingResponseHandler<Void>() {
                 @Override
-                public Void handleResponse(HttpResponse httpResponse) {
+                public Void handleResponse(HttpResponse httpResponse) throws IOException {
                     this.validateResponse(httpResponse);
                     return null;
                 }
@@ -80,13 +83,12 @@ public class WebDavBaseUtils {
      * @return
      */
     public void upload(String url, InputStream fis) throws IOException {
-        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         HttpPut put = new HttpPut(url);
         InputStreamEntity requestEntity = new InputStreamEntity(fis);
         put.setEntity(requestEntity);
         webDavSupport.execute(put, new ValidatingResponseHandler<Void>() {
             @Override
-            public Void handleResponse(HttpResponse httpResponse) {
+            public Void handleResponse(HttpResponse httpResponse) throws IOException {
                 this.validateResponse(httpResponse);
                 return null;
             }
