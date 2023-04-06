@@ -12,13 +12,10 @@ import com.luna.common.utils.Assert;
 import com.luna.common.utils.ObjectUtils;
 import io.github.lunasaw.webdav.WebDavSupport;
 import io.github.lunasaw.webdav.entity.MultiStatusResult;
-import io.github.lunasaw.webdav.hander.LockResponseHandler;
 import io.github.lunasaw.webdav.properties.WebDavConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jackrabbit.webdav.DavConstants;
-import org.apache.jackrabbit.webdav.client.methods.HttpLock;
-import org.apache.jackrabbit.webdav.lock.LockInfo;
 import org.apache.jackrabbit.webdav.lock.Scope;
 import org.apache.jackrabbit.webdav.lock.Type;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -316,11 +313,12 @@ public class WebDavUtils {
     // =============================================
 
     public MultiStatusResult list(String url) {
-        MultiStatusResult list = list(url, DavConstants.PROPFIND_ALL_PROP_INCLUDE, Constant.NUMBER_ZERO);
-        return list;
+        url = checkUrlAndFullSlash(url);
+        return list(url, DavConstants.PROPFIND_ALL_PROP_INCLUDE, Constant.NUMBER_ZERO);
     }
 
     public boolean delete(String url) {
+        checkUrl(url);
         try {
             webDavBaseUtils.delete(url);
             return true;
@@ -330,6 +328,7 @@ public class WebDavUtils {
     }
 
     public boolean upload(String url, InputStream fis) {
+        url = checkUrlAndFullSlash(url);
         try {
             webDavBaseUtils.upload(url, fis);
             return true;
@@ -340,6 +339,7 @@ public class WebDavUtils {
     }
 
     public boolean exist(String url) {
+        checkUrl(url);
         try {
             return webDavJackrabbitUtils.exist(url);
         } catch (Exception e) {
@@ -348,7 +348,7 @@ public class WebDavUtils {
     }
 
     public String lock(String url, Scope scope, Type type, String owner, Long timeout, boolean isDeep){
-        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
+        checkUrl(url);
         exist(url);
         try {
             return webDavJackrabbitUtils.lock(url, scope, type,owner, timeout, isDeep);
@@ -358,7 +358,7 @@ public class WebDavUtils {
     }
 
     public String refreshLock(String url, long timeout, String... lockTokens) {
-        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
+        checkUrl(url);
         try {
             return webDavJackrabbitUtils.refreshLock(url, timeout, lockTokens);
         } catch (Exception e) {
@@ -367,7 +367,7 @@ public class WebDavUtils {
     }
 
     public boolean unLock(String url, String lockToken) {
-        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
+        checkUrl(url);
         try {
             return webDavJackrabbitUtils.unLock(url, lockToken);
         } catch (Exception e) {
@@ -378,9 +378,11 @@ public class WebDavUtils {
 
 
     public MultiStatusResult list(String url, int propfindType, int dep) {
+        url = checkUrlAndFullSlash(url);
         try {
             return webDavJackrabbitUtils.list(url, propfindType, dep);
         } catch (IOException e) {
+            log.error("list::url = {}, propfindType = {}, dep = {} ", url, propfindType, dep, e);
             return null;
         }
     }
@@ -388,5 +390,33 @@ public class WebDavUtils {
 
     public boolean mkdir(String url) {
         return webDavJackrabbitUtils.mkdir(url);
+    }
+
+
+    public boolean copy(String url, String dest, boolean overwrite, boolean shallow) {
+        url = checkUrlAndFullSlash(url);
+        dest = checkUrlAndFullSlash(dest);
+        if (!exist(url)) {
+            return false;
+        }
+        try {
+            webDavJackrabbitUtils.copy(url, dest, overwrite, shallow);
+            return true;
+        } catch (Exception e) {
+            log.error("copy::url = {}, dest = {}, overwrite = {}, shallow = {} ", url, dest, overwrite, shallow, e);
+            return false;
+        }
+    }
+
+    private static String checkUrlAndFullSlash(String url) {
+        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
+        if (!url.endsWith(StrPoolConstant.SLASH)){
+            return StringTools.appendIfMissing(url, StrPoolConstant.SLASH);
+        }
+        return url;
+    }
+
+    private static void checkUrl(String url) {
+        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
     }
 }

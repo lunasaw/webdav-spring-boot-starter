@@ -10,6 +10,7 @@ import io.github.lunasaw.webdav.request.WebDavBaseUtils;
 import io.github.lunasaw.webdav.request.WebDavJackrabbitUtils;
 import io.github.lunasaw.webdav.request.WebDavUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.Assert.assertTrue;
@@ -56,12 +59,14 @@ public class FileUploadTest extends BaseTest {
 
     @Test
     public void copy_test() throws IOException {
-        webDavJackrabbitUtils.copy("http://localhost:8080/webdav/project/test/", "http://localhost:8080/webdav/project/test2/", true, false);
+        String filePath = webDavSupport.getBasePath();
+        boolean copy = webDavUtils.copy(filePath + "/test/", filePath + "/test4/", true, true);
+        assertTrue(copy);
     }
 
     @Test
     public void exist_test() throws IOException {
-        webDavJackrabbitUtils.exist("http://localhost:8080/webdav/project/");
+        webDavUtils.exist("http://localhost:8080/webdav/project/");
     }
 
     @Test
@@ -107,6 +112,12 @@ public class FileUploadTest extends BaseTest {
         String result = webDavUtils.refreshLock(url, 5000 * 20, token);
         assertTrue(token.startsWith("opaquelocktoken:"));
         assertTrue(token.equals(result));
+    }
+
+    @Test
+    public void atest() {
+        Set<String> allow = webDavJackrabbitUtils.getAllow(webDavSupport.getBasePath());
+        assertTrue(CollectionUtils.isNotEmpty(allow));
     }
 
     @Test
