@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"io.github.lunasaw.webdav"},{"l":"io.github.lunasaw.webdav.config"},{"l":"io.github.lunasaw.webdav.properties"}];updateSearchResults();
