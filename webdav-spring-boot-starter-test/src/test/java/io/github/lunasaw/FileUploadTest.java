@@ -52,10 +52,10 @@ public class FileUploadTest extends BaseTest {
 
     @Test
     public void download_test() {
-        String ROUND_FILE_PATH = "/Users/weidian/compose/images/buy_logo_{}.jpeg";
-        ROUND_FILE_PATH = StringTools.format(ROUND_FILE_PATH, RandomUtils.nextInt());
-        webDavUtils.download("luna", "/images/buy_logo.jpeg", ROUND_FILE_PATH);
-        Assert.isTrue(FileTools.isExists(ROUND_FILE_PATH), ROUND_FILE_PATH + "文件下载错误");
+        String localPath = "/Users/weidian/compose/images/buy_logo_{}.jpeg";
+        localPath = StringTools.format(localPath, RandomUtils.nextInt());
+        webDavUtils.download("luna", "/images/buy_logo.jpeg", localPath);
+        Assert.isTrue(FileTools.isExists(localPath), localPath + "文件下载错误");
     }
 
     @Test
@@ -88,6 +88,13 @@ public class FileUploadTest extends BaseTest {
         String filePath = webDavSupport.getBasePath();
         MultiStatusResult list = webDavUtils.list(filePath + "luna/images/");
         System.out.println(JSON.toJSONString(list.getMultistatus().getResponse()));
+    }
+
+    @Test
+    public void option_list() {
+        String url = webDavSupport.getBasePath();
+        Set<String> option = webDavJackrabbitUtils.option(url);
+        System.out.println(option);
     }
 
     @Test
