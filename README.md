@@ -1,8 +1,10 @@
-# luna-webdav
+# **[webdav-spring-boot-starter](https://github.com/lunasaw/webdav-spring-boot-starter)**
 
-提前安装httpd服务器设置指定目录，Httpd操作封装,包括文件上传下载，检测是否存在等操作集成springboot starter
+使用SpringBoot-Starter机制，基于`jackrabbit-webdav`打造的webdav-cleint，基于apache2的webdav模块测试，也可以使用其他webdav协议。
 
-## Maven依赖：
+提前安装httpd服务器设置指定目录，Httpd操作封装，包括文件上传下载，检测文件是否存在等操作。具体使用见测试类和文档。
+
+## 使用Maven依赖：
 
 ```xml
 <dependency>
@@ -12,7 +14,7 @@
 </dependency>
 ```
 
-[Api文档链接](https://lunasaw.github.io/webdav-spring-boot-starter/api_doc/)
+> [Api文档链接](https://lunasaw.github.io/webdav-spring-boot-starter/docs/)
 
 ## webdav-spring-boot-starter使用示例：
 
@@ -27,43 +29,58 @@ luna:
   webdav:
     host: http://127.0.0.1:8080 #指定host
     path: /webdav/project #指定跟路径
-    scope: test #指定项目scope 可选，后续上传可自定义scpoe
+    scope: luna #指定项目scope 可选，后续上传可自定义scpoe
     maxTotal: 80 # 最大链接数量通 优化httpclient
     defaultMaxPerRoute: 100
     username: luna # webdav 的basic配置用户名
     password: luna # webdav 的basic配置密码
+    openLog: true # 是否开启日志 默认false 开启会打印每次返回的response
 ```
 
 ### 3.使用
 
-所有方法都封装在`io.github.lunasaw.webdav.WebDavUtils`使用可以参见`webdav-spring-boot-starter-test`,只需要注入即可使用
+所有方法都封装在`io.github.lunasaw.webdav.request.WebDavBaseUtils`使用可以参见`webdav-spring-boot-starter-test`,只需要注入即可使用，详细使用可见`io.github.lunasaw.WebDavTest`
+
+下面是部分例子
+
 
 ```java
-    @Autowired
-    private WebDavUtils webDavUtils;
+@Autowired
+private WebDavUtils webDavUtils;
 ```
+
+> SCOPE_PATH 使用前置测试方法，先获取到SCOPE_PATH，按照上述配置则为 http://127.0.0.1:8080/webdav/project/luna
+>
+>  @Before
+> public void pre() {
+>     **SCOPE_PATH** = **webDavSupport**.getScopePath();
+> }
 
 #### 上传
 
+下载test模块resource下附带一个测试图片，引用上述配置后，`webDavUtils.upload(IMAGE, file.getAbsolutePath())`上传文件，即可在http://127.0.0.1:8080/webdav/project/luna/IMAGE 下看到所需文件。
+
 ```java
-    @Test
-    public void atest() {
-        boolean test =
-            webDavUtils.upload("/images/buy_logo.jpeg", "/Users/weidian/compose/images/buy_logo.jpeg");
-        Assert.isTrue(test);
-        boolean exist = webDavUtils.exist("http://localhost:8080/webdav/project/test/images/buy_logo.jpeg");
-        Assert.isTrue(exist);
-    }
+@Test
+public void a_upload_test() throws FileNotFoundException {
+    File file = ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX + IMAGE);
+    Assert.isTrue(webDavUtils.upload(IMAGE, file.getAbsolutePath()));
+    Assert.isTrue(webDavUtils.exist(SCOPE_PATH + IMAGE));
+}
 ```
 
 #### 下载
 
+下载同理，测试将文件刚刚上传的文件下载到本地目录。`webDavUtils.download(SCOPE_PATH + IMAGE, localPath);`即可
+
 ```java
-    @Test
-    public void btest() {
-        String ROUND_FILE_PATH = "/Users/weidian/compose/images/buy_logo_{}.jpeg";
-        ROUND_FILE_PATH = StringTools.format(ROUND_FILE_PATH, RandomUtils.nextInt());
-        webDavUtils.download("test", "/images/buy_logo.jpeg", ROUND_FILE_PATH);
-        Assert.isTrue(FileTools.isExists(ROUND_FILE_PATH), ROUND_FILE_PATH + "文件下载错误");
-    }
+@Test
+public void download_test() {
+    String localPath = FileTools.getUserHomePath() + "/buy_logo_{}.jpeg";
+    localPath = StringTools.format(localPath, RandomUtils.nextInt());
+    webDavUtils.download(SCOPE_PATH + IMAGE, localPath);
+    Assert.isTrue(FileTools.isExists(localPath), localPath + "文件下载错误");
+    FileTools.deleteIfExists(localPath);
+}
 ```
+
