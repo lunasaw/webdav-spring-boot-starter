@@ -55,16 +55,9 @@ public class WebDavBaseUtils {
      * @param filePath 文件存储路径
      * @throws IOException
      */
-    public Boolean download(String url, String filePath) {
-        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
-        Assert.isTrue(StringUtils.isNotBlank(filePath), "文件夹不能为空");
-
-        try {
-            HttpGet get = new HttpGet(url);
-            return webDavSupport.execute(get, new DownloadHandler(filePath));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public Boolean download(String url, String filePath) throws IOException {
+        HttpGet get = new HttpGet(url);
+        return webDavSupport.execute(get, new DownloadHandler(filePath));
     }
 
     /**

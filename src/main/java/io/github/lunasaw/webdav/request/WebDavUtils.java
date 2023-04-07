@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -84,6 +85,45 @@ public class WebDavUtils {
     }
 
     /**
+     * 复制文件夹
+     * 
+     * @param url 源文件夹
+     * @param dest 目标文件夹
+     * 默认覆盖 递归
+     * @return
+     */
+    public boolean copyDir(String url, String dest) {
+        return copyDir(url, dest, true, true);
+    }
+
+    /**
+     * 拷贝目录
+     * 
+     * @param url 源文件夹
+     * @param dest 目标文件夹
+     * @param overwrite 是否覆盖
+     * @param shallow 是否递归
+     * @return
+     */
+    public boolean copyDir(String url, String dest, boolean overwrite, boolean shallow) {
+        url = checkUrlAndFullSlash(url);
+        dest = checkUrlAndFullSlash(dest);
+        return copy(url, dest, overwrite, shallow);
+    }
+
+    public boolean copy(String url, String dest) {
+        return copy(url, dest, true);
+    }
+
+    public boolean copy(String url, String dest, boolean overwrite) {
+        return copy(url, dest, overwrite, true);
+    }
+
+    public boolean move(String url, String dest) {
+        return move(url, dest, true);
+    }
+
+    /**
      * 上传文件 路径不存在则递归创建目录 默认覆盖 不存在则创建
      *
      * @param filePath 网络文件路径
@@ -103,6 +143,12 @@ public class WebDavUtils {
         return upload(scope, filePath, FileTools.read(file), created, true);
     }
 
+    /**
+     * 上传文件
+     * @param filePath 文件上传后的相对路径
+     * @param file 文件
+     * @return
+     */
     public boolean uploadAutoScope(String filePath, byte[] file) {
         return uploadAutoScope(filePath, file, true);
     }
@@ -182,8 +228,8 @@ public class WebDavUtils {
         return upload(absoluteFilePath, file, true);
     }
 
-    public void download(String filePath, String localPath) {
-        download(webDavConfig.getScope(), filePath, localPath, true);
+    public void download(URL filePath, String localPath) {
+        download(webDavConfig.getScope(), filePath.getPath(), localPath, true);
     }
 
     public void download(String scope, String filePath, String localPath) {
@@ -243,7 +289,7 @@ public class WebDavUtils {
         }
 
         Assert.isTrue(exist(filePath), "网络文件路径不能为空");
-        webDavBaseUtils.download(filePath, lastLocalPath);
+        download(filePath, lastLocalPath);
     }
 
     /**
@@ -348,7 +394,17 @@ public class WebDavUtils {
             .map(e -> e.stream().map(MultiStatusResult.ResponseItem::getHref).collect(Collectors.toList())).orElse(Lists.newArrayList());
     }
 
-    // =============================================
+    // =============================================以下是基础方法================================================
+
+    public void download(String url, String lastLocalPath) {
+        Assert.isTrue(exist(url), "路径不能为空");
+        Assert.isTrue(StringUtils.isNotBlank(lastLocalPath), "文件夹不能为空");
+        try {
+            webDavBaseUtils.download(url, lastLocalPath);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * 绝对路径上传
@@ -386,9 +442,9 @@ public class WebDavUtils {
         return listByProperty(url, Constant.NUMBER_ONE);
     }
 
-
     /**
      * 删除文件
+     * 
      * @param url - 网络绝对路径
      * @return
      */
@@ -448,6 +504,20 @@ public class WebDavUtils {
         }
     }
 
+    /**
+     * 文件夹是否存在
+     * @param url
+     * @return
+     */
+    public boolean existDir(String url) {
+       return exist(checkUrlAndFullSlash(url));
+    }
+
+    /**
+     * 路径是否存在
+     * @param url - 网络绝对路径
+     * @return
+     */
     public boolean exist(String url) {
         checkUrl(url);
         try {
@@ -497,7 +567,10 @@ public class WebDavUtils {
     }
 
     public boolean mkdir(String url) {
-        checkUrl(url);
+        url = checkUrl(url);
+        if (!exist(url)) {
+            return true;
+        }
         try {
             return webDavJackrabbitUtils.mkdir(url);
         } catch (Exception e) {
@@ -506,9 +579,18 @@ public class WebDavUtils {
         }
     }
 
+    /**
+     * 复制文件
+     * 
+     * @param url - 网络绝对路径
+     * @param dest - 目标网络绝对路径
+     * @param overwrite - 是否覆盖
+     * @param shallow - 是否浅拷贝
+     * @return
+     */
     public boolean copy(String url, String dest, boolean overwrite, boolean shallow) {
-        url = checkUrlAndFullSlash(url);
-        dest = checkUrlAndFullSlash(dest);
+        url = checkUrl(url);
+        dest = checkUrl(dest);
         if (!exist(url)) {
             return false;
         }

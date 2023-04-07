@@ -104,6 +104,14 @@ public class WebDavSupport implements InitializingBean {
         return url.toString();
     }
 
+    /**
+     * 获取项目的配置根路径
+     * @return
+     */
+    public String getScopePath() {
+        return url.toString() + webDavConfig.getScope() + StrPoolConstant.SLASH;
+    }
+
     public void initClientContext() {
 
         PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
