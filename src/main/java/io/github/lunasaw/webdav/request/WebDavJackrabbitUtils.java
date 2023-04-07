@@ -112,6 +112,11 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         return webDavSupport.execute(propfind, new MultiStatusHandler());
     }
 
+    /**
+     * 获取支持的请求方法
+     * @param url - 网络路径
+     * @return
+     */
     public Set<String> getAllow(String url) {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         try {
@@ -126,11 +131,16 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         }
     }
 
-    public Set<String> getDavComplianceClasses(String url) {
+    /**
+     * 获取支持的请求方法
+     * @param url - 网络路径
+     * @return
+     */
+    public Set<String> option(String url) {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         try {
             HttpOptions httpOptions = new HttpOptions(url);
-            HttpResponse response = webDavSupport.executeWithContext(httpOptions);
+            HttpResponse response = webDavSupport.execute(httpOptions);
             Set<String> searchGrammars = httpOptions.getDavComplianceClasses(response);
             return searchGrammars;
         } catch (IOException e) {
@@ -168,7 +178,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         try {
             HttpCheckout httpCheckout = new HttpCheckout(url);
-            HttpResponse response = webDavSupport.executeWithContext(httpCheckout);
+            HttpResponse response = webDavSupport.execute(httpCheckout);
             return httpCheckout.succeeded(response);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -185,7 +195,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         try {
             HttpCheckin checkin = new HttpCheckin(url);
-            HttpResponse response = webDavSupport.executeWithContext(checkin);
+            HttpResponse response = webDavSupport.execute(checkin);
             return checkin.succeeded(response);
         } catch (IOException e) {
             throw new RuntimeException(e);

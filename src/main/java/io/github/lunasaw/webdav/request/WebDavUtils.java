@@ -24,7 +24,6 @@ import org.springframework.stereotype.Component;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -181,9 +180,6 @@ public class WebDavUtils {
         return upload(absoluteFilePath, file, true);
     }
 
-    public void download(URL url, String localPath) {
-        webDavBaseUtils.downloadUrl(url.toString(), localPath);
-    }
 
     public void download(String filePath, String localPath) {
         download(webDavConfig.getScope(), filePath, localPath, true);
@@ -246,7 +242,7 @@ public class WebDavUtils {
         }
 
         Assert.isTrue(exist(filePath), "网络文件路径不能为空");
-        webDavBaseUtils.downloadUrl(filePath, lastLocalPath);
+        webDavBaseUtils.download(filePath, lastLocalPath);
     }
 
     /**

@@ -42,10 +42,6 @@ public class WebDavSupport implements InitializingBean {
 
     private URL               url;
 
-    public HttpResponse executeWithContext(HttpRequestBase base) throws IOException {
-        return client.execute(base, context);
-    }
-
     /**
      * Validate the response using the response handler. Aborts the request if there is an exception.
      *
@@ -100,6 +96,10 @@ public class WebDavSupport implements InitializingBean {
         }
     }
 
+    /**
+     * 使用的基础项目路径 = webDavConfig.getHost() + webDavConfig.getPath() + StrPoolConstant.SLASH
+     * @return
+     */
     public String getBasePath() {
         return url.toString();
     }
