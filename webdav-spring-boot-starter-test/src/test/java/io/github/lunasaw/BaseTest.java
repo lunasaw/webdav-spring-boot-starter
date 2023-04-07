@@ -17,7 +17,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 @TestPropertySource(
         properties = "spring.profiles.active=dev",
-        locations = "classpath:application-test.yml")
+        locations = "classpath:application-dev.yml")
 @SpringBootTest(
         classes = Main.class)
 public class BaseTest {

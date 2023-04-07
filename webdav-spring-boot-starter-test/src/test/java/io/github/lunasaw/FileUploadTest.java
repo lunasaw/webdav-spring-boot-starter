@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -42,12 +43,8 @@ public class FileUploadTest extends BaseTest {
 
     @Test
     public void upload_test() {
-        String url = webDavSupport.getBasePath() + "luna" + "/images/static/buy_logo22.jpeg";
-        boolean test =
-            webDavUtils.upload("luna","/images/static/buy_logo22.jpeg", "/Users/weidian/compose/images/buy_logo.jpeg");
-        Assert.isTrue(test);
-        boolean exist = webDavUtils.exist(url);
-        Assert.isTrue(exist);
+        Assert.isTrue(webDavUtils.upload("buy_logo.jpeg", "buy_logo.jpeg"));
+        Assert.isTrue(webDavUtils.exist(webDavSupport.getBasePath() + "buy_logo.jpeg"));
     }
 
     @Test
@@ -69,13 +66,12 @@ public class FileUploadTest extends BaseTest {
     public void copy_move() throws IOException {
         String filePath = webDavSupport.getBasePath();
         String url = String.format("testMove3/%s", UUID.randomUUID());
-        webDavUtils.upload("luna",  url, new byte[] {1, 2});
+        webDavUtils.upload("luna", url, new byte[] {1, 2});
         assertTrue(webDavUtils.exist(filePath + "luna/" + url));
         String dest = String.format("testMove3/%s", UUID.randomUUID());
         boolean copy = webDavUtils.move(filePath + "luna/" + url, filePath + "luna/" + dest, true);
         assertTrue(copy);
     }
-
 
     @Test
     public void test_exist() {
@@ -86,8 +82,8 @@ public class FileUploadTest extends BaseTest {
     @Test
     public void exist_list() {
         String filePath = webDavSupport.getBasePath();
-        MultiStatusResult list = webDavUtils.list(filePath + "luna/images/");
-        System.out.println(JSON.toJSONString(list.getMultistatus().getResponse()));
+        List<String> list = webDavUtils.listFileName(filePath + "luna/images", Integer.MAX_VALUE);
+        System.out.println(JSON.toJSONString(list));
     }
 
     @Test
@@ -118,7 +114,7 @@ public class FileUploadTest extends BaseTest {
     public void create_test() {
         String filePath = webDavSupport.getBasePath();
         String url = String.format("images/%s", UUID.randomUUID());
-        webDavUtils.upload("luna",  url, new byte[] {1, 2});
+        webDavUtils.upload("luna", url, new byte[] {1, 2});
         assertTrue(webDavUtils.exist(filePath + "luna/" + url));
     }
 
