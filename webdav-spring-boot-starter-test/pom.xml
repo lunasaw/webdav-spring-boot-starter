@@ -13,7 +13,6 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <luna-common.version>2.3.9</luna-common.version>
-        <json-fastJson.version>1.1.0-RELEASE</json-fastJson.version>
         <spring-boot.version>2.7.8</spring-boot.version>
     </properties>
     <dependencyManagement>
@@ -22,11 +21,6 @@
                 <groupId>io.github.lunasaw</groupId>
                 <artifactId>luna-common</artifactId>
                 <version>${luna-common.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.lunasaw</groupId>
-                <artifactId>json-fastJson</artifactId>
-                <version>${json-fastJson.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -47,7 +41,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
-            <version>2.7.8</version>
+            <version>2.7.10</version>
         </dependency>
 
 
