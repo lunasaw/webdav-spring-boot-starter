@@ -2,6 +2,7 @@ package io.github.lunasaw.webdav.request;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
 import com.luna.common.constant.Constant;
 import com.luna.common.constant.StrPoolConstant;
 import com.luna.common.file.FileNameUtil;
@@ -29,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -180,7 +182,6 @@ public class WebDavUtils {
         return upload(absoluteFilePath, file, true);
     }
 
-
     public void download(String filePath, String localPath) {
         download(webDavConfig.getScope(), filePath, localPath, true);
     }
@@ -289,20 +290,62 @@ public class WebDavUtils {
         return lock(url, Scope.SHARED, type, owner, timeout, isDeep);
     }
 
+    /**
+     * 返回所有属性信息
+     * 
+     * @param url - 网络绝对路径
+     * @param dep - 深度
+     * @return
+     */
     public MultiStatusResult listAllProp(String url, int dep) {
         return list(url, DavConstants.PROPFIND_ALL_PROP, dep);
     }
 
+    /**
+     * 返回基础信息
+     * 
+     * @param url - 网络绝对路径
+     * @param dep - 深度
+     * @return
+     */
     public MultiStatusResult listByProperty(String url, int dep) {
         return list(url, DavConstants.PROPFIND_BY_PROPERTY, dep);
     }
 
+    /**
+     * 返回属性名称
+     * 
+     * @param url - 网络绝对路径
+     * @param dep - 深度
+     * @return
+     */
     public MultiStatusResult listPropfindPropertyNames(String url, int dep) {
         return list(url, DavConstants.PROPFIND_PROPERTY_NAMES, dep);
     }
 
+    /**
+     * 返回所有属性信息 RFC 4918, Section 9.1
+     * 
+     * @param url - 网络绝对路径
+     * @param dep - 深度
+     * @return
+     */
     public MultiStatusResult listPropfindAllPropInclude(String url, int dep) {
         return list(url, DavConstants.PROPFIND_ALL_PROP_INCLUDE, dep);
+    }
+
+    /**
+     * 文件列表
+     *
+     * @param url - 网路绝对路径
+     * @param dep - 深度 注意这里的深度是指文件夹的深度，不是文件的深度 可选 { 0,1 Integer.MAX_VALUE }
+     * 其中 Integer.MAX_VALUE需要开启DavDepthInfinity On
+     * {@link <a href="https://www.wenjiangs.com/doc/apache22-mod-mod_dav#9f8b9669ae18a8623329fa0ae85d7410">...</a>}
+     * @return - 文件名列表
+     */
+    public List<String> listFileName(String url, int dep) {
+        return Optional.ofNullable(list(url, dep)).map(MultiStatusResult::getMultistatus).map(MultiStatusResult.Multistatus::getResponse)
+            .map(e -> e.stream().map(MultiStatusResult.ResponseItem::getHref).collect(Collectors.toList())).orElse(Lists.newArrayList());
     }
 
     // =============================================
@@ -310,20 +353,45 @@ public class WebDavUtils {
     /**
      * 绝对路径上传
      * 
-     * @param absoluteFilePath
-     * @param file
-     * @param cover
+     * @param absoluteFilePath - 绝对路径
+     * @param file - 文件
+     * @param cover - 是否覆盖
      * @return
      */
     public boolean upload(String absoluteFilePath, byte[] file, boolean cover) {
         return upload(absoluteFilePath, IoUtil.toStream(file), cover);
     }
 
-    public MultiStatusResult list(String url) {
+    /**
+     * 文件列表
+     *
+     * @param url - 网路绝对路径
+     * @param dep - 深度 注意这里的深度是指文件夹的深度，不是文件的深度 可选 { 0,1 Integer.MAX_VALUE }
+     * @return
+     */
+    public MultiStatusResult list(String url, int dep) {
         url = checkUrlAndFullSlash(url);
-        return list(url, DavConstants.PROPFIND_ALL_PROP_INCLUDE, Constant.NUMBER_ZERO);
+        return listByProperty(url, dep);
     }
 
+    /**
+     * 文件列表
+     * 
+     * @param url - 网路绝对路径
+     * 默认深度为1
+     * @return
+     */
+    public MultiStatusResult list(String url) {
+        url = checkUrlAndFullSlash(url);
+        return listByProperty(url, Constant.NUMBER_ONE);
+    }
+
+
+    /**
+     * 删除文件
+     * @param url - 网络绝对路径
+     * @return
+     */
     public boolean delete(String url) {
         checkUrl(url);
         try {
@@ -349,26 +417,31 @@ public class WebDavUtils {
      * 
      * @param stream 文件流
      * @param cover 是否覆盖
-     * @param absoluteFilePath 带文件名的绝对地址
+     * @param absoluteFilePath 带文件名的绝对网路路径
      * @return
      */
     public boolean upload(String absoluteFilePath, InputStream stream, boolean cover) {
         if (exist(absoluteFilePath)) {
             if (cover) {
                 delete(absoluteFilePath);
-                upload(absoluteFilePath, stream);
-                return true;
+                return upload(absoluteFilePath, stream);
             }
         }
-        upload(absoluteFilePath, stream);
-        return true;
+        return upload(absoluteFilePath, stream);
     }
 
+    /**
+     * 上传文件
+     * 
+     * @param url - 网路绝对路径
+     * @param fis - 文件流
+     * @return
+     */
     public boolean upload(String url, InputStream fis) {
         checkUrl(url);
         try {
             webDavBaseUtils.upload(url, fis);
-            return true;
+            return exist(url);
         } catch (IOException e) {
             log.error("upload::url = {}", url, e);
             return false;
