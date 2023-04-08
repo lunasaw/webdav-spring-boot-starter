@@ -63,6 +63,16 @@ public class WebDavUtils {
     @Autowired
     private WebDavSupport         webDavSupport;
 
+    public List<String> searchForList(String url, Integer depth, String query) {
+        List<String> list = listFileName(url, depth);
+        return list.stream().filter(s -> s.contains(query)).collect(Collectors.toList());
+
+    }
+
+    public List<String> searchForList(String url, String query) {
+        return searchForList(url, 1, query);
+    }
+
     public MultiStatusResult search(String url, String query) {
         return search(url, LanguageCode.zh.getName(), null, query, new HashMap<>());
     }

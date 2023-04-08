@@ -134,7 +134,8 @@ public class WebDavTest extends BaseTest {
 
     @Test
     public void search_test() {
-        webDavUtils.search(SCOPE_PATH, "buy_logo.jpeg");
+        List<String> list = webDavUtils.searchForList(SCOPE_PATH, "test");
+        System.out.println(JSON.toJSONString(list));
     }
 
     @Test

@@ -278,7 +278,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * @return
      */
     public boolean delete(String url) throws IOException {
-        HttpSubscribe httpDelete = new HttpSubscribe(url);
+        HttpDelete httpDelete = new HttpDelete(url);
         return webDavSupport.execute(httpDelete, new ValidatingResponseHandler<Boolean>() {
             @Override
             public Boolean handleResponse(HttpResponse httpResponse) {
@@ -287,6 +287,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
             }
         });
     }
+
 
     public boolean update(String url, String[] updateSource, int updateType, DavPropertyName... davPropertyName) throws IOException {
         DavPropertyNameSet davPropertyNames = new DavPropertyNameSet();
@@ -353,17 +354,6 @@ public class WebDavJackrabbitUtils implements InitializingBean {
             public Boolean handleResponse(HttpResponse httpResponse) {
                 this.validateResponse(httpResponse);
                 return httpReport.succeeded(httpResponse);
-            }
-        });
-    }
-
-    public boolean delete(String url) throws IOException {
-        HttpDelete httpDelete = new HttpDelete(url);
-        return webDavSupport.execute(httpDelete, new ValidatingResponseHandler<Boolean>() {
-            @Override
-            public Boolean handleResponse(HttpResponse httpResponse) {
-                this.validateResponse(httpResponse);
-                return httpDelete.succeeded(httpResponse);
             }
         });
     }
