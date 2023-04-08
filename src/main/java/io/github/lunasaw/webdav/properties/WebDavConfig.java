@@ -10,32 +10,39 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * 2021年03月12日 09:24:00
  */
 @Data
-@ConfigurationProperties(prefix = "luna.webdav")
+@ConfigurationProperties(prefix = "spring.webdav")
 public class WebDavConfig {
 
-    private String  username;
-    private String  password;
+    /**
+     * 用户名
+     */
+    private String        username;
+    /**
+     * 密码
+     */
+    private String        password;
 
     /**
      * domain:port
      */
-    private String  host               = "127.0.0.1:8080";
+    private String        host               = "127.0.0.1:8080";
     /**
      * like "/webdav"
      */
-    private String  path               = "";
+    private String        path               = "/";
 
-    private Integer maxTotal           = 100;
+    private Integer       maxTotal           = 100;
 
-    private Integer defaultMaxPerRoute = 80;
+    private Integer       defaultMaxPerRoute = 80;
+
+    private String        authType           = "basic";
 
     /**
      * 项目名称
      */
-    private String  scope;
+    private String        scope;
 
-    public static Boolean openLog = false;
-
+    public static Boolean openLog            = false;
 
     public void setOpenLog(Boolean openLog) {
         WebDavConfig.openLog = openLog;

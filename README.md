@@ -1,5 +1,9 @@
 # **[webdav-spring-boot-starter](https://github.com/lunasaw/webdav-spring-boot-starter)**
 
+![Maven Central](https://img.shields.io/maven-central/v/io.github.lunasaw/webdav-spring-boot-starter)
+[![GitHub license](https://img.shields.io/badge/MIT_License-blue.svg)](https://raw.githubusercontent.com/lunasaw/webdav-spring-boot-starter/master/LICENSE.txt)
+[![Build Status](https://github.com/lunasaw/webdav-spring-boot-starter/actions/workflows/maven-publish.yml/badge.svg?branch=master)](https://github.com/lunasaw/webdav-spring-boot-starter/actions)
+
 使用SpringBoot-Starter机制，基于`jackrabbit-webdav`打造的webdav-cleint，基于apache2的webdav模块测试，也可以使用其他webdav协议。
 
 提前安装httpd服务器设置指定目录，Httpd操作封装，包括文件上传下载，检测文件是否存在等操作。具体使用见测试类和文档。
@@ -22,7 +26,7 @@
 
 ### 2.添加配置
 
-指定luna.webdav.host后，spring启动会自动引入`io.github.lunasaw.webdav.config.WebDavAutoConfiguration`初始化配置。
+指定spring.webdav.host后，spring启动会自动引入`io.github.lunasaw.webdav.config.WebDavAutoConfiguration`初始化配置。
 
 ```yml
 luna:
@@ -34,6 +38,7 @@ luna:
     defaultMaxPerRoute: 100
     username: luna # webdav 的basic配置用户名
     password: luna # webdav 的basic配置密码
+    auth-type: digest # webdav 认证类型，可选basic，digest，暂不支持：ntlm，kerberos，spnego，negotiate
     openLog: true # 是否开启日志 默认false 开启会打印每次返回的response
 ```
 

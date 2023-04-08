@@ -117,18 +117,14 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * @param url - 网络路径
      * @return
      */
-    public Set<String> getAllow(String url) {
-        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
-        try {
-            HttpOptions httpOptions = new HttpOptions(url);
-            HttpResponse response = webDavSupport.execute(httpOptions);
-            Header[] allHeaders = response.getHeaders("Allow");
-            String allowMethod = Arrays.stream(allHeaders).findFirst().map(Header::getValue).orElse(StringUtils.EMPTY);
-            List<String> list = Splitter.on(StrPoolConstant.COMMA).splitToList(allowMethod);
-            return Sets.newHashSet(list);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public Set<String> getAllow(String url) throws IOException {
+        HttpOptions httpOptions = new HttpOptions(url);
+        HttpResponse response = webDavSupport.execute(httpOptions);
+        Header[] allHeaders = response.getHeaders("Allow");
+        String allowMethod = Arrays.stream(allHeaders).findFirst().map(Header::getValue).orElse(StringUtils.EMPTY);
+        List<String> list = Splitter.on(StrPoolConstant.COMMA).splitToList(allowMethod);
+        return Sets.newHashSet(list);
+
     }
 
     /**
@@ -136,16 +132,12 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * @param url - 网络路径
      * @return
      */
-    public Set<String> option(String url) {
+    public Set<String> option(String url) throws IOException {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
-        try {
-            HttpOptions httpOptions = new HttpOptions(url);
-            HttpResponse response = webDavSupport.execute(httpOptions);
-            Set<String> searchGrammars = httpOptions.getDavComplianceClasses(response);
-            return searchGrammars;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        HttpOptions httpOptions = new HttpOptions(url);
+        HttpResponse response = webDavSupport.execute(httpOptions);
+        Set<String> searchGrammars = httpOptions.getDavComplianceClasses(response);
+        return searchGrammars;
     }
 
     /**

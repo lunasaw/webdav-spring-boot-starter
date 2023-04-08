@@ -1,9 +1,11 @@
 package io.github.lunasaw.webdav;
 
 import com.luna.common.constant.StrPoolConstant;
+import com.luna.common.text.StringTools;
 import com.luna.common.utils.Assert;
 import io.github.lunasaw.webdav.properties.WebDavConfig;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
@@ -12,7 +14,9 @@ import org.apache.http.client.*;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.impl.auth.AuthSchemeBase;
 import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.auth.DigestScheme;
 import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClients;
@@ -78,12 +82,11 @@ public class WebDavSupport implements InitializingBean {
      */
     protected <T> T execute(HttpClientContext context, HttpRequestBase request, ResponseHandler<T> responseHandler)
         throws IOException {
-        HttpContext requestLocalContext = new BasicHttpContext(context);
         try {
             if (responseHandler != null) {
-                return this.client.execute(request, responseHandler, requestLocalContext);
+                return this.client.execute(request, responseHandler, context);
             } else {
-                return (T)this.client.execute(request, requestLocalContext);
+                return (T)this.client.execute(request, context);
             }
         } catch (HttpResponseException e) {
             // Don't abort if we get this exception, caller may want to repeat request.
@@ -92,12 +95,13 @@ public class WebDavSupport implements InitializingBean {
             request.abort();
             throw e;
         } finally {
-            context.setAttribute(HttpClientContext.USER_TOKEN, requestLocalContext.getAttribute(HttpClientContext.USER_TOKEN));
+            context.setAttribute(HttpClientContext.USER_TOKEN, context.getAttribute(HttpClientContext.USER_TOKEN));
         }
     }
 
     /**
      * 使用的基础项目路径 = webDavConfig.getHost() + webDavConfig.getPath() + StrPoolConstant.SLASH
+     * 
      * @return
      */
     public String getBasePath() {
@@ -106,6 +110,7 @@ public class WebDavSupport implements InitializingBean {
 
     /**
      * 获取项目的配置根路径
+     * 
      * @return
      */
     public String getScopePath() {
@@ -118,24 +123,28 @@ public class WebDavSupport implements InitializingBean {
         // 设置最大连接数
         cm.setMaxTotal(webDavConfig.getMaxTotal());
         cm.setDefaultMaxPerRoute(webDavConfig.getDefaultMaxPerRoute());
-        HttpHost targetHost = new HttpHost(webDavConfig.getHost());
-
-        CredentialsProvider provider = new BasicCredentialsProvider();
-
-        UsernamePasswordCredentials upc = new UsernamePasswordCredentials(webDavConfig.getUsername(), webDavConfig.getPassword());
-        provider.setCredentials(AuthScope.ANY, upc);
-
-        AuthCache authCache = new BasicAuthCache();
-        // Generate BASIC scheme object and add it to the local auth cache
-        BasicScheme basicAuth = new BasicScheme();
-        authCache.put(targetHost, basicAuth);
-
-        // Add AuthCache to the execution context
-        HttpClientContext context = HttpClientContext.create();
-        context.setCredentialsProvider(provider);
-        context.setAuthCache(authCache);
-        this.context = context;
         this.client = HttpClients.custom().setConnectionManager(cm).build();
+
+
+        HttpHost targetHost = new HttpHost(webDavConfig.getHost());
+        this.context =  HttpClientContext.create();
+        CredentialsProvider provider = new BasicCredentialsProvider();
+        if (StringTools.isNotBlank(webDavConfig.getUsername())){
+            UsernamePasswordCredentials upc = new UsernamePasswordCredentials(webDavConfig.getUsername(), webDavConfig.getPassword());
+            provider.setCredentials(new AuthScope(targetHost), upc);
+            AuthCache authCache = new BasicAuthCache();
+            // Generate BASIC or Digest scheme object and add it to the local auth cache
+            BasicScheme basicScheme = new BasicScheme();
+            DigestScheme digestScheme = new DigestScheme();
+            if (basicScheme.getSchemeName().equals(webDavConfig.getAuthType())){
+                authCache.put(targetHost, basicScheme);
+            } else if (digestScheme.getSchemeName().equals(webDavConfig.getAuthType())) {
+                authCache.put(targetHost, digestScheme);
+            }
+            // Add AuthCache to the execution context
+            context.setCredentialsProvider(provider);
+            context.setAuthCache(authCache);
+        }
     }
 
     @Override

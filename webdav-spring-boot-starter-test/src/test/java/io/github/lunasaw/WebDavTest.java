@@ -99,7 +99,7 @@ public class WebDavTest extends BaseTest {
     @Test
     public void option_list() {
         String url = webDavSupport.getBasePath();
-        Set<String> option = webDavJackrabbitUtils.option(url);
+        Set<String> option = webDavUtils.option(url);
         System.out.println(option);
     }
 
@@ -137,7 +137,7 @@ public class WebDavTest extends BaseTest {
 
     @Test
     public void test_allow() {
-        Set<String> allow = webDavJackrabbitUtils.getAllow(webDavSupport.getBasePath());
+        Set<String> allow = webDavUtils.getAllow(webDavSupport.getBasePath());
         assertTrue(CollectionUtils.isNotEmpty(allow));
     }
 }
