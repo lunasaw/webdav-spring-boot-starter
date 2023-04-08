@@ -38,6 +38,7 @@ luna:
     defaultMaxPerRoute: 100
     username: luna # webdav 的basic配置用户名
     password: luna # webdav 的basic配置密码
+    auth-type: digest # webdav 认证类型，可选basic，digest，暂不支持：ntlm，kerberos，spnego，negotiate
     openLog: true # 是否开启日志 默认false 开启会打印每次返回的response
 ```
 
