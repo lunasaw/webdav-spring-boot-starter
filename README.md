@@ -29,7 +29,7 @@
 指定spring.webdav.host后，spring启动会自动引入`io.github.lunasaw.webdav.config.WebDavAutoConfiguration`初始化配置。
 
 ```yml
-luna:
+spring:
   webdav:
     host: http://127.0.0.1:8080 #指定host
     path: /webdav/project #指定跟路径
