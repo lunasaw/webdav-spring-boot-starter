@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @EnableConfigurationProperties(WebDavConfig.class)
-@ConditionalOnProperty(prefix = "luna.webdav", name = "host")
+@ConditionalOnProperty(prefix = "spring.webdav", name = "host")
 @ComponentScan("io.github.lunasaw.webdav")
 public class WebDavAutoConfiguration {
 

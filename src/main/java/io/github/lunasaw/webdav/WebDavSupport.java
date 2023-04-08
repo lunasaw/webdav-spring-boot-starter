@@ -13,6 +13,7 @@ import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.auth.DigestScheme;
 import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClients;
@@ -78,12 +79,11 @@ public class WebDavSupport implements InitializingBean {
      */
     protected <T> T execute(HttpClientContext context, HttpRequestBase request, ResponseHandler<T> responseHandler)
         throws IOException {
-        HttpContext requestLocalContext = new BasicHttpContext(context);
         try {
             if (responseHandler != null) {
-                return this.client.execute(request, responseHandler, requestLocalContext);
+                return this.client.execute(request, responseHandler, context);
             } else {
-                return (T)this.client.execute(request, requestLocalContext);
+                return (T)this.client.execute(request, context);
             }
         } catch (HttpResponseException e) {
             // Don't abort if we get this exception, caller may want to repeat request.
@@ -92,12 +92,13 @@ public class WebDavSupport implements InitializingBean {
             request.abort();
             throw e;
         } finally {
-            context.setAttribute(HttpClientContext.USER_TOKEN, requestLocalContext.getAttribute(HttpClientContext.USER_TOKEN));
+            context.setAttribute(HttpClientContext.USER_TOKEN, context.getAttribute(HttpClientContext.USER_TOKEN));
         }
     }
 
     /**
      * 使用的基础项目路径 = webDavConfig.getHost() + webDavConfig.getPath() + StrPoolConstant.SLASH
+     * 
      * @return
      */
     public String getBasePath() {
@@ -106,6 +107,7 @@ public class WebDavSupport implements InitializingBean {
 
     /**
      * 获取项目的配置根路径
+     * 
      * @return
      */
     public String getScopePath() {
@@ -123,11 +125,13 @@ public class WebDavSupport implements InitializingBean {
         CredentialsProvider provider = new BasicCredentialsProvider();
 
         UsernamePasswordCredentials upc = new UsernamePasswordCredentials(webDavConfig.getUsername(), webDavConfig.getPassword());
-        provider.setCredentials(AuthScope.ANY, upc);
+        provider.setCredentials(new AuthScope(targetHost), upc);
 
         AuthCache authCache = new BasicAuthCache();
         // Generate BASIC scheme object and add it to the local auth cache
         BasicScheme basicAuth = new BasicScheme();
+        DigestScheme digestScheme = new DigestScheme();
+        authCache.put(targetHost, digestScheme);
         authCache.put(targetHost, basicAuth);
 
         // Add AuthCache to the execution context
