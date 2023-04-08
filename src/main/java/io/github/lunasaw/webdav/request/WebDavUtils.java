@@ -3,6 +3,7 @@ package io.github.lunasaw.webdav.request;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.luna.common.constant.Constant;
 import com.luna.common.constant.StrPoolConstant;
 import com.luna.common.file.FileNameUtil;
@@ -16,7 +17,10 @@ import io.github.lunasaw.webdav.entity.MultiStatusResult;
 import io.github.lunasaw.webdav.properties.WebDavConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.Header;
+import org.apache.http.HttpResponse;
 import org.apache.jackrabbit.webdav.DavConstants;
+import org.apache.jackrabbit.webdav.client.methods.HttpOptions;
 import org.apache.jackrabbit.webdav.lock.Scope;
 import org.apache.jackrabbit.webdav.lock.Type;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,9 +33,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -145,6 +147,7 @@ public class WebDavUtils {
 
     /**
      * 上传文件
+     * 
      * @param filePath 文件上传后的相对路径
      * @param file 文件
      * @return
@@ -506,15 +509,17 @@ public class WebDavUtils {
 
     /**
      * 文件夹是否存在
+     * 
      * @param url
      * @return
      */
     public boolean existDir(String url) {
-       return exist(checkUrlAndFullSlash(url));
+        return exist(checkUrlAndFullSlash(url));
     }
 
     /**
      * 路径是否存在
+     * 
      * @param url - 网络绝对路径
      * @return
      */
@@ -603,6 +608,14 @@ public class WebDavUtils {
         }
     }
 
+    /**
+     * 移动文件 改名
+     * 
+     * @param url
+     * @param dest
+     * @param overwrite
+     * @return
+     */
     public boolean move(String url, String dest, boolean overwrite) {
         url = checkUrl(url);
         dest = checkUrl(dest);
@@ -615,6 +628,43 @@ public class WebDavUtils {
         }
     }
 
+    /**
+     * 获取支持的请求方法
+     * 
+     * @param url
+     * @return
+     */
+    public Set<String> option(String url) {
+        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
+        try {
+            return webDavJackrabbitUtils.option(url);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 获取支持的请求方法
+     * 
+     * @param url - 网络路径
+     * @return
+     */
+    public Set<String> getAllow(String url) {
+        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
+        try {
+            return webDavJackrabbitUtils.getAllow(url);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 
+     * 检查URl 并且补全斜杠
+     * 
+     * @param url
+     * @return
+     */
     private static String checkUrlAndFullSlash(String url) {
         url = StringTools.trim(url);
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");

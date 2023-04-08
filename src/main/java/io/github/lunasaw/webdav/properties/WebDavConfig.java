@@ -35,6 +35,8 @@ public class WebDavConfig {
 
     private Integer       defaultMaxPerRoute = 80;
 
+    private String        authType           = "basic";
+
     /**
      * 项目名称
      */
