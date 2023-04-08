@@ -42,9 +42,6 @@ public class WebDavTest extends BaseTest {
     @Autowired
     private WebDavSupport         webDavSupport;
 
-    @Autowired
-    private WebDavJackrabbitUtils webDavJackrabbitUtils;
-
     private String                SCOPE_PATH = StringUtils.EMPTY;
 
     @Before
@@ -133,6 +130,11 @@ public class WebDavTest extends BaseTest {
         assertFalse(webDavUtils.delete(url));
         assertTrue(webDavUtils.unLock(url, token));
         assertTrue(webDavUtils.delete(url));
+    }
+
+    @Test
+    public void search_test() {
+        webDavUtils.search(SCOPE_PATH, "buy_logo.jpeg");
     }
 
     @Test

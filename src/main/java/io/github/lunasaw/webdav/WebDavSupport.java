@@ -131,7 +131,7 @@ public class WebDavSupport implements InitializingBean {
         CredentialsProvider provider = new BasicCredentialsProvider();
         if (StringTools.isNotBlank(webDavConfig.getUsername())){
             UsernamePasswordCredentials upc = new UsernamePasswordCredentials(webDavConfig.getUsername(), webDavConfig.getPassword());
-            provider.setCredentials(new AuthScope(targetHost), upc);
+            provider.setCredentials(AuthScope.ANY, upc);
             AuthCache authCache = new BasicAuthCache();
             // Generate BASIC or Digest scheme object and add it to the local auth cache
             BasicScheme basicScheme = new BasicScheme();

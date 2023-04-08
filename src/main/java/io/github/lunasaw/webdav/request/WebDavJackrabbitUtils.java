@@ -21,13 +21,23 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.util.EntityUtils;
 import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.client.methods.*;
 import org.apache.jackrabbit.webdav.lock.LockInfo;
 import org.apache.jackrabbit.webdav.lock.Scope;
 import org.apache.jackrabbit.webdav.lock.Type;
+import org.apache.jackrabbit.webdav.observation.EventType;
+import org.apache.jackrabbit.webdav.observation.Filter;
+import org.apache.jackrabbit.webdav.observation.SubscriptionInfo;
+import org.apache.jackrabbit.webdav.property.DavPropertyName;
+import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
+import org.apache.jackrabbit.webdav.search.SearchInfo;
+import org.apache.jackrabbit.webdav.version.LabelInfo;
+import org.apache.jackrabbit.webdav.version.MergeInfo;
+import org.apache.jackrabbit.webdav.version.UpdateInfo;
+import org.apache.jackrabbit.webdav.version.report.ReportInfo;
+import org.apache.jackrabbit.webdav.version.report.ReportType;
+import org.apache.jackrabbit.webdav.xml.Namespace;
 import org.json.JSONObject;
 import org.json.XML;
 import org.springframework.beans.factory.InitializingBean;
@@ -60,7 +70,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         HttpMove httpMove = new HttpMove(url, dest, overwrite);
         webDavSupport.execute(httpMove, new ValidatingResponseHandler<Void>() {
             @Override
-            public Void handleResponse(HttpResponse httpResponse){
+            public Void handleResponse(HttpResponse httpResponse) {
                 this.validateResponse(httpResponse);
                 return null;
             }
@@ -77,7 +87,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         HttpMkcol mkcol = new HttpMkcol(url);
         HttpResponse response = webDavSupport.execute(mkcol, new ValidatingResponseHandler<HttpResponse>() {
             @Override
-            public HttpResponse handleResponse(HttpResponse httpResponse)  {
+            public HttpResponse handleResponse(HttpResponse httpResponse) {
                 this.validateResponse(httpResponse);
                 return httpResponse;
             }
@@ -114,6 +124,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
 
     /**
      * 获取支持的请求方法
+     * 
      * @param url - 网络路径
      * @return
      */
@@ -129,6 +140,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
 
     /**
      * 获取支持的请求方法
+     * 
      * @param url - 网络路径
      * @return
      */
@@ -237,6 +249,156 @@ public class WebDavJackrabbitUtils implements InitializingBean {
             public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
                 this.validateResponse(httpResponse);
                 return lockInfo.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
+     * 搜索文件
+     * 
+     * @param url - 网络路径
+     * @param language - 查询语言
+     * @param languageNamespace - 查询语言命名空间
+     * @param query - 查询语句
+     * @param namespaces - 命名空间
+     * @return
+     */
+    public MultiStatusResult search(String url, String language, Namespace languageNamespace, String query,
+        Map<String, String> namespaces) throws IOException {
+        SearchInfo searchInfo = new SearchInfo(language, languageNamespace, query, namespaces);
+        HttpSearch httpSearch = new HttpSearch(url, searchInfo);
+        MultiStatusResult execute = webDavSupport.execute(httpSearch, new MultiStatusHandler());
+        return execute;
+    }
+
+    /**
+     * 删除文件
+     *
+     * @param url
+     * @return
+     */
+    public boolean delete(String url) throws IOException {
+        HttpSubscribe httpDelete = new HttpSubscribe(url);
+        return webDavSupport.execute(httpDelete, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return httpDelete.succeeded(httpResponse);
+            }
+        });
+    }
+
+    public boolean update(String url, String[] updateSource, int updateType, DavPropertyName... davPropertyName) throws IOException {
+        DavPropertyNameSet davPropertyNames = new DavPropertyNameSet();
+        for (DavPropertyName propertyName : davPropertyName) {
+            davPropertyNames.add(propertyName);
+        }
+        UpdateInfo updateInfo = new UpdateInfo(updateSource, updateType, davPropertyNames);
+        HttpUpdate httpUpdate = new HttpUpdate(url, updateInfo);
+        return webDavSupport.execute(httpUpdate, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return httpUpdate.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
+     * 为资源打标签
+     * 
+     * @param url 资源路径
+     * @param labelName 标签名称
+     * @param type 标签类型
+     * TYPE_SET = 0;
+     * TYPE_REMOVE = 1;
+     * TYPE_ADD = 2;
+     * @param depth 0：只对当前资源打标签 1：对当前资源和子资源打标签
+     * @return
+     * @throws IOException
+     */
+    public boolean lable(String url, String labelName, int type, int depth) throws IOException {
+        LabelInfo labelInfo = new LabelInfo(labelName, type, depth);
+        HttpLabel httpLabel = new HttpLabel(url, labelInfo);
+        return webDavSupport.execute(httpLabel, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return httpLabel.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
+     * 报告
+     * 
+     * @param url 资源路径
+     * @param typelocalName 报告类型 {@link ReportType}
+     * @param typeNamespace
+     * @param depth
+     * @param davPropertyName
+     * @return
+     * @throws IOException
+     */
+    public boolean report(String url, String typelocalName, Namespace typeNamespace, int depth, DavPropertyName... davPropertyName)
+        throws IOException {
+        DavPropertyNameSet propertyNames = new DavPropertyNameSet();
+        for (DavPropertyName propertyName : davPropertyName) {
+            propertyNames.add(propertyName);
+        }
+        ReportInfo reportInfo = new ReportInfo(typelocalName, typeNamespace, depth, propertyNames);
+        HttpReport httpReport = new HttpReport(url, reportInfo);
+        return webDavSupport.execute(httpReport, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return httpReport.succeeded(httpResponse);
+            }
+        });
+    }
+
+    public boolean delete(String url) throws IOException {
+        HttpDelete httpDelete = new HttpDelete(url);
+        return webDavSupport.execute(httpDelete, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return httpDelete.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
+     * 订阅
+     * @param url - 网络路径
+     * @param eventTypes - 事件类型
+     * @param filters - 过滤器
+     * @param noLocal - 是否本地
+     * @param isDeep - 是否深度
+     * @param timeout - 超时时间
+     * @param subscriptionId - 订阅ID
+     * @return
+     * @throws IOException
+     */
+    public boolean sunScribe(String url, EventType[] eventTypes, Filter[] filters, boolean noLocal, boolean isDeep, long timeout,
+        String subscriptionId) throws IOException {
+        SubscriptionInfo subscriptionInfo = new SubscriptionInfo(eventTypes, filters, noLocal, isDeep, timeout);
+        return sunScribe(url, subscriptionInfo, subscriptionId);
+    }
+
+    /**
+     * 删除文件
+     *
+     * @param url
+     * @return
+     */
+    public boolean sunScribe(String url, SubscriptionInfo info, String subscriptionId) throws IOException {
+        HttpSubscribe httpSubscribe = new HttpSubscribe(url, info, subscriptionId);
+        return webDavSupport.execute(httpSubscribe, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return httpSubscribe.succeeded(httpResponse);
             }
         });
     }

@@ -8,12 +8,15 @@ import com.luna.common.constant.Constant;
 import com.luna.common.constant.StrPoolConstant;
 import com.luna.common.file.FileNameUtil;
 import com.luna.common.file.FileTools;
+import com.luna.common.i18n.LanguageCode;
 import com.luna.common.io.IoUtil;
+import com.luna.common.text.CharsetUtil;
 import com.luna.common.text.StringTools;
 import com.luna.common.utils.Assert;
 import com.luna.common.utils.ObjectUtils;
 import io.github.lunasaw.webdav.WebDavSupport;
 import io.github.lunasaw.webdav.entity.MultiStatusResult;
+import io.github.lunasaw.webdav.hander.MultiStatusHandler;
 import io.github.lunasaw.webdav.properties.WebDavConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -21,8 +24,11 @@ import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.client.methods.HttpOptions;
+import org.apache.jackrabbit.webdav.client.methods.HttpSearch;
 import org.apache.jackrabbit.webdav.lock.Scope;
 import org.apache.jackrabbit.webdav.lock.Type;
+import org.apache.jackrabbit.webdav.search.SearchInfo;
+import org.apache.jackrabbit.webdav.xml.Namespace;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -56,6 +62,18 @@ public class WebDavUtils {
 
     @Autowired
     private WebDavSupport         webDavSupport;
+
+    public MultiStatusResult search(String url, String query) {
+        return search(url, LanguageCode.zh.getName(), null, query, new HashMap<>());
+    }
+
+    public MultiStatusResult search(String url, String language, String query) {
+        return search(url, language, null, query, new HashMap<>());
+    }
+
+    public MultiStatusResult search(String url, String language, Namespace namespaces, String query) {
+        return search(url, language, namespaces, query, new HashMap<>());
+    }
 
     /**
      * 文件树创建文件
@@ -654,6 +672,25 @@ public class WebDavUtils {
         try {
             return webDavJackrabbitUtils.getAllow(url);
         } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 搜索文件
+     *
+     * @param url - 网络路径
+     * @param language - 查询语言
+     * @param languageNamespace - 查询语言命名空间
+     * @param query - 查询语句
+     * @param namespaces - 命名空间
+     * @return
+     */
+    public MultiStatusResult search(String url, String language, Namespace languageNamespace, String query,
+        Map<String, String> namespaces) {
+        try {
+            return webDavJackrabbitUtils.search(url, language, languageNamespace, query, namespaces);
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
