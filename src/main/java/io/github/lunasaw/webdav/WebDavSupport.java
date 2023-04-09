@@ -41,9 +41,18 @@ public class WebDavSupport implements InitializingBean {
     @Autowired
     private WebDavConfig      webDavConfig;
 
+    /**
+     * The connection manager.
+     */
     private HttpClient        client;
+    /**
+     * The context to be used when executing requests.
+     */
     private HttpClientContext context;
 
+    /**
+     * The URL to the WebDAV server.
+     */
     private URL               url;
 
     /**

@@ -1,12 +1,12 @@
 # **[webdav-spring-boot-starter](https://github.com/lunasaw/webdav-spring-boot-starter)**
 
-![Maven Central](https://img.shields.io/maven-central/v/io.github.lunasaw/webdav-spring-boot-starter)
-[![GitHub license](https://img.shields.io/badge/MIT_License-blue.svg)](https://raw.githubusercontent.com/lunasaw/webdav-spring-boot-starter/master/LICENSE.txt)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.lunasaw/webdav-spring-boot-starter)](https://mvnrepository.com/artifact/io.github.lunasaw/webdav-spring-boot-starter)
+[![GitHub license](https://img.shields.io/badge/MIT_License-blue.svg)](https://raw.githubusercontent.com/lunasaw/webdav-spring-boot-starter/master/LICENSE)
 [![Build Status](https://github.com/lunasaw/webdav-spring-boot-starter/actions/workflows/maven-publish.yml/badge.svg?branch=master)](https://github.com/lunasaw/webdav-spring-boot-starter/actions)
 
 使用SpringBoot-Starter机制，基于`jackrabbit-webdav`打造的webdav-cleint，基于apache2的webdav模块测试，也可以使用其他webdav协议。
 
-提前安装httpd服务器设置指定目录，Httpd操作封装，包括文件上传下载，检测文件是否存在等操作。具体使用见测试类和文档。
+提前[安装httpd服务器](./web-dav-install.md)设置指定目录，Httpd操作封装，包括文件上传下载，检测文件是否存在等操作。具体使用见测试类和文档。
 
 ## 使用Maven依赖：
 
@@ -89,3 +89,4 @@ public void download_test() {
 }
 ```
 
+其他使用见io.github.lunasaw.webdav.request.WebDavJackrabbitUtils

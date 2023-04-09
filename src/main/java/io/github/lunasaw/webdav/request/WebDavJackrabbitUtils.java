@@ -1,7 +1,5 @@
 package io.github.lunasaw.webdav.request;
 
-import ch.qos.logback.core.joran.spi.XMLUtil;
-import com.alibaba.fastjson2.JSON;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Sets;
 import com.luna.common.constant.Constant;
@@ -19,6 +17,8 @@ import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.jackrabbit.webdav.DavConstants;
+import org.apache.jackrabbit.webdav.bind.BindInfo;
+import org.apache.jackrabbit.webdav.bind.UnbindInfo;
 import org.apache.jackrabbit.webdav.client.methods.*;
 import org.apache.jackrabbit.webdav.lock.LockInfo;
 import org.apache.jackrabbit.webdav.lock.Scope;
@@ -36,21 +36,16 @@ import org.apache.jackrabbit.webdav.version.UpdateInfo;
 import org.apache.jackrabbit.webdav.version.report.ReportInfo;
 import org.apache.jackrabbit.webdav.version.report.ReportType;
 import org.apache.jackrabbit.webdav.xml.Namespace;
-import org.json.JSONObject;
-import org.json.XML;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.w3c.dom.Document;
-
-import javax.xml.ws.Response;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.*;
 
 /**
  * @author chenzhangyue
- * 2023/4/4
+ * @description jackrabbit webdav 工具类 {@link org.apache.jackrabbit.webdav.client.methods} 请求
+ * @date 2023/4/4
  */
 @Component
 @Slf4j
@@ -442,7 +437,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
     }
 
     /**
-     * 创建虚拟工作区
+     * 创建虚拟工作区 #checkIn #checkOout
      * 
      * @see <a href="http://webdav.org/specs/rfc3253.html#rfc.section.6.3">RFC 3253, Section 6.3</a>
      * @param url
@@ -475,6 +470,47 @@ public class WebDavJackrabbitUtils implements InitializingBean {
             public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
                 this.validateResponse(httpResponse);
                 return versionControl.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
+     * BIND 方法通过添加从 BIND 主体中指定的段到 BIND 主体中标识的资源的新绑定来修改 Request-URI 标识的集合
+     * 
+     * @param url - 网络路径
+     * @param href - 资源路径 相对路径
+     * @param segment - 资源名称
+     * @see <a href="http://webdav.org/specs/rfc5842.html#rfc.section.4">RFC 5842, Section 4</a>*
+     * @return
+     * @throws IOException
+     */
+    public boolean bind(String url, String href, String segment) throws IOException {
+        BindInfo bindInfo = new BindInfo(href, segment);
+        HttpBind httpBind = new HttpBind(url, bindInfo);
+        return webDavSupport.execute(httpBind, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
+                this.validateResponse(httpResponse);
+                return httpBind.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
+     * UNBIND 方法通过从 Request-URI 标识的集合中删除指定的段来修改 Request-URI 标识的集合
+     * @param url - 网络路径
+     * @param segment - 资源名称
+     * @return
+     * @throws IOException
+     */
+    public boolean unBind(String url, String segment) throws IOException {
+        UnbindInfo unbindInfo = new UnbindInfo(segment);
+        HttpUnbind httpBind = new HttpUnbind(url, unbindInfo);
+        return webDavSupport.execute(httpBind, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
+                this.validateResponse(httpResponse);
+                return httpBind.succeeded(httpResponse);
             }
         });
     }
