@@ -705,10 +705,20 @@ public class WebDavUtils {
         }
     }
 
+    public boolean workSpace(String url) {
+        url = checkUrlAndFullSlash(url);
+        try {
+            webDavJackrabbitUtils.mkworkspace(url);
+            return true;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
-     * 
+     *
      * 检查URl 并且补全斜杠
-     * 
+     *
      * @param url
      * @return
      */

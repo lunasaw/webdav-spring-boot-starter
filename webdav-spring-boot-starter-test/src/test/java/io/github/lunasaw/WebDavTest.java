@@ -35,14 +35,14 @@ import static org.junit.Assert.*;
 @Slf4j
 public class WebDavTest extends BaseTest {
 
-    private static final String   IMAGE      = "buy_logo.jpeg";
+    private static final String IMAGE      = "buy_logo.jpeg";
     @Autowired
-    private WebDavUtils           webDavUtils;
+    private WebDavUtils         webDavUtils;
 
     @Autowired
-    private WebDavSupport         webDavSupport;
+    private WebDavSupport       webDavSupport;
 
-    private String                SCOPE_PATH = StringUtils.EMPTY;
+    private String              SCOPE_PATH = StringUtils.EMPTY;
 
     @Before
     public void pre() {

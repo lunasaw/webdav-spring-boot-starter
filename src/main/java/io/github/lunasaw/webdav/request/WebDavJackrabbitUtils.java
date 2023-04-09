@@ -6,13 +6,9 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Sets;
 import com.luna.common.constant.Constant;
 import com.luna.common.constant.StrPoolConstant;
-import com.luna.common.io.IoUtil;
-import com.luna.common.net.HttpUtils;
 import com.luna.common.utils.Assert;
-import com.luna.common.xml.XmlUtil;
 import io.github.lunasaw.webdav.WebDavSupport;
 import io.github.lunasaw.webdav.entity.MultiStatusResult;
-import io.github.lunasaw.webdav.exception.WebDavException;
 import io.github.lunasaw.webdav.hander.LockResponseHandler;
 import io.github.lunasaw.webdav.hander.MultiStatusHandler;
 import io.github.lunasaw.webdav.hander.ValidatingResponseHandler;
@@ -21,6 +17,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.jackrabbit.webdav.DavConstants;
 import org.apache.jackrabbit.webdav.client.methods.*;
 import org.apache.jackrabbit.webdav.lock.LockInfo;
@@ -29,11 +26,12 @@ import org.apache.jackrabbit.webdav.lock.Type;
 import org.apache.jackrabbit.webdav.observation.EventType;
 import org.apache.jackrabbit.webdav.observation.Filter;
 import org.apache.jackrabbit.webdav.observation.SubscriptionInfo;
+import org.apache.jackrabbit.webdav.property.DavProperty;
 import org.apache.jackrabbit.webdav.property.DavPropertyName;
 import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
+import org.apache.jackrabbit.webdav.property.DavPropertySet;
 import org.apache.jackrabbit.webdav.search.SearchInfo;
 import org.apache.jackrabbit.webdav.version.LabelInfo;
-import org.apache.jackrabbit.webdav.version.MergeInfo;
 import org.apache.jackrabbit.webdav.version.UpdateInfo;
 import org.apache.jackrabbit.webdav.version.report.ReportInfo;
 import org.apache.jackrabbit.webdav.version.report.ReportType;
@@ -117,9 +115,49 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * @return
      */
     public MultiStatusResult list(String url, int propfindType, int dep) throws IOException {
-        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         HttpPropfind propfind = new HttpPropfind(url, propfindType, dep);
         return webDavSupport.execute(propfind, new MultiStatusHandler());
+    }
+
+    /**
+     * 设置属性
+     *
+     * @param url - 网络路径
+     * @param propertySet - 设置属性
+     * @param removeProperties - 移除属性
+     * @return
+     * @throws IOException
+     */
+    public boolean proppatch(String url, Set<DavProperty<?>> propertySet, Set<DavPropertyName> removeProperties) throws IOException {
+        DavPropertySet setProperties = new DavPropertySet();
+        for (DavProperty<?> davProperty : propertySet) {
+            setProperties.add(davProperty);
+        }
+        DavPropertyNameSet removePropertyNameSet = new DavPropertyNameSet();
+        for (DavPropertyName davPropertyName : removeProperties) {
+            removePropertyNameSet.add(davPropertyName);
+        }
+        return proppatch(url, setProperties, removePropertyNameSet);
+    }
+
+    /**
+     * 设置属性
+     * 
+     * @param url - 网络路径
+     * @param setProperties - 设置属性
+     * @param removeProperties - 移除属性
+     * @return
+     * @throws IOException
+     */
+    public boolean proppatch(String url, DavPropertySet setProperties, DavPropertyNameSet removeProperties) throws IOException {
+        HttpProppatch httpProppatch = new HttpProppatch(url, setProperties, removeProperties);
+        return webDavSupport.execute(httpProppatch, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) throws ClientProtocolException, IOException {
+                this.validateResponse(httpResponse);
+                return httpProppatch.succeeded(httpResponse);
+            }
+        });
     }
 
     /**
@@ -145,7 +183,6 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * @return
      */
     public Set<String> option(String url) throws IOException {
-        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         HttpOptions httpOptions = new HttpOptions(url);
         HttpResponse response = webDavSupport.execute(httpOptions);
         Set<String> searchGrammars = httpOptions.getDavComplianceClasses(response);
@@ -288,7 +325,6 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         });
     }
 
-
     public boolean update(String url, String[] updateSource, int updateType, DavPropertyName... davPropertyName) throws IOException {
         DavPropertyNameSet davPropertyNames = new DavPropertyNameSet();
         for (DavPropertyName propertyName : davPropertyName) {
@@ -360,6 +396,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
 
     /**
      * 订阅
+     * 
      * @param url - 网络路径
      * @param eventTypes - 事件类型
      * @param filters - 过滤器
@@ -370,25 +407,74 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * @return
      * @throws IOException
      */
-    public boolean sunScribe(String url, EventType[] eventTypes, Filter[] filters, boolean noLocal, boolean isDeep, long timeout,
+    public boolean subScribe(String url, EventType[] eventTypes, Filter[] filters, boolean noLocal, boolean isDeep, long timeout,
         String subscriptionId) throws IOException {
         SubscriptionInfo subscriptionInfo = new SubscriptionInfo(eventTypes, filters, noLocal, isDeep, timeout);
-        return sunScribe(url, subscriptionInfo, subscriptionId);
+        return subScribe(url, subscriptionInfo, subscriptionId);
     }
 
     /**
-     * 删除文件
+     * 订阅
      *
      * @param url
      * @return
      */
-    public boolean sunScribe(String url, SubscriptionInfo info, String subscriptionId) throws IOException {
+    public boolean subScribe(String url, SubscriptionInfo info, String subscriptionId) throws IOException {
         HttpSubscribe httpSubscribe = new HttpSubscribe(url, info, subscriptionId);
         return webDavSupport.execute(httpSubscribe, new ValidatingResponseHandler<Boolean>() {
             @Override
             public Boolean handleResponse(HttpResponse httpResponse) {
                 this.validateResponse(httpResponse);
                 return httpSubscribe.succeeded(httpResponse);
+            }
+        });
+    }
+
+    public boolean unSubScribe(String url, String subscriptionId) throws IOException {
+        HttpUnsubscribe unsubscribe = new HttpUnsubscribe(url, subscriptionId);
+        return webDavSupport.execute(unsubscribe, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return unsubscribe.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
+     * 创建虚拟工作区
+     * 
+     * @see <a href="http://webdav.org/specs/rfc3253.html#rfc.section.6.3">RFC 3253, Section 6.3</a>
+     * @param url
+     * @return
+     * @throws IOException
+     */
+    public boolean mkworkspace(String url) throws IOException {
+        HttpMkworkspace mkworkspace = new HttpMkworkspace(url);
+        return webDavSupport.execute(mkworkspace, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
+                this.validateResponse(httpResponse);
+                return mkworkspace.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
+     * 版本控制
+     * 
+     * @see <a href="http://webdav.org/specs/rfc3253.html#rfc.section.3.5">RFC 3253, Section 3.5</a>
+     * @param url
+     * @return
+     * @throws IOException
+     */
+    public boolean versionControl(String url) throws IOException {
+        HttpVersionControl versionControl = new HttpVersionControl(url);
+        return webDavSupport.execute(versionControl, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
+                this.validateResponse(httpResponse);
+                return versionControl.succeeded(httpResponse);
             }
         });
     }
