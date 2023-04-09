@@ -35,17 +35,14 @@ import static org.junit.Assert.*;
 @Slf4j
 public class WebDavTest extends BaseTest {
 
-    private static final String   IMAGE      = "buy_logo.jpeg";
+    private static final String IMAGE      = "buy_logo.jpeg";
     @Autowired
-    private WebDavUtils           webDavUtils;
+    private WebDavUtils         webDavUtils;
 
     @Autowired
-    private WebDavSupport         webDavSupport;
+    private WebDavSupport       webDavSupport;
 
-    @Autowired
-    private WebDavJackrabbitUtils webDavJackrabbitUtils;
-
-    private String                SCOPE_PATH = StringUtils.EMPTY;
+    private String              SCOPE_PATH = StringUtils.EMPTY;
 
     @Before
     public void pre() {
@@ -133,6 +130,12 @@ public class WebDavTest extends BaseTest {
         assertFalse(webDavUtils.delete(url));
         assertTrue(webDavUtils.unLock(url, token));
         assertTrue(webDavUtils.delete(url));
+    }
+
+    @Test
+    public void search_test() {
+        List<String> list = webDavUtils.searchForList(SCOPE_PATH, "test");
+        System.out.println(JSON.toJSONString(list));
     }
 
     @Test

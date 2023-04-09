@@ -1,18 +1,12 @@
 package io.github.lunasaw.webdav.request;
 
-import ch.qos.logback.core.joran.spi.XMLUtil;
-import com.alibaba.fastjson2.JSON;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Sets;
 import com.luna.common.constant.Constant;
 import com.luna.common.constant.StrPoolConstant;
-import com.luna.common.io.IoUtil;
-import com.luna.common.net.HttpUtils;
 import com.luna.common.utils.Assert;
-import com.luna.common.xml.XmlUtil;
 import io.github.lunasaw.webdav.WebDavSupport;
 import io.github.lunasaw.webdav.entity.MultiStatusResult;
-import io.github.lunasaw.webdav.exception.WebDavException;
 import io.github.lunasaw.webdav.hander.LockResponseHandler;
 import io.github.lunasaw.webdav.hander.MultiStatusHandler;
 import io.github.lunasaw.webdav.hander.ValidatingResponseHandler;
@@ -22,27 +16,36 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.util.EntityUtils;
 import org.apache.jackrabbit.webdav.DavConstants;
+import org.apache.jackrabbit.webdav.bind.BindInfo;
+import org.apache.jackrabbit.webdav.bind.UnbindInfo;
 import org.apache.jackrabbit.webdav.client.methods.*;
 import org.apache.jackrabbit.webdav.lock.LockInfo;
 import org.apache.jackrabbit.webdav.lock.Scope;
 import org.apache.jackrabbit.webdav.lock.Type;
-import org.json.JSONObject;
-import org.json.XML;
+import org.apache.jackrabbit.webdav.observation.EventType;
+import org.apache.jackrabbit.webdav.observation.Filter;
+import org.apache.jackrabbit.webdav.observation.SubscriptionInfo;
+import org.apache.jackrabbit.webdav.property.DavProperty;
+import org.apache.jackrabbit.webdav.property.DavPropertyName;
+import org.apache.jackrabbit.webdav.property.DavPropertyNameSet;
+import org.apache.jackrabbit.webdav.property.DavPropertySet;
+import org.apache.jackrabbit.webdav.search.SearchInfo;
+import org.apache.jackrabbit.webdav.version.LabelInfo;
+import org.apache.jackrabbit.webdav.version.UpdateInfo;
+import org.apache.jackrabbit.webdav.version.report.ReportInfo;
+import org.apache.jackrabbit.webdav.version.report.ReportType;
+import org.apache.jackrabbit.webdav.xml.Namespace;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.w3c.dom.Document;
-
-import javax.xml.ws.Response;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.*;
 
 /**
  * @author chenzhangyue
- * 2023/4/4
+ * @description jackrabbit webdav 工具类 {@link org.apache.jackrabbit.webdav.client.methods} 请求
+ * @date 2023/4/4
  */
 @Component
 @Slf4j
@@ -60,7 +63,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         HttpMove httpMove = new HttpMove(url, dest, overwrite);
         webDavSupport.execute(httpMove, new ValidatingResponseHandler<Void>() {
             @Override
-            public Void handleResponse(HttpResponse httpResponse){
+            public Void handleResponse(HttpResponse httpResponse) {
                 this.validateResponse(httpResponse);
                 return null;
             }
@@ -77,7 +80,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         HttpMkcol mkcol = new HttpMkcol(url);
         HttpResponse response = webDavSupport.execute(mkcol, new ValidatingResponseHandler<HttpResponse>() {
             @Override
-            public HttpResponse handleResponse(HttpResponse httpResponse)  {
+            public HttpResponse handleResponse(HttpResponse httpResponse) {
                 this.validateResponse(httpResponse);
                 return httpResponse;
             }
@@ -107,13 +110,54 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      * @return
      */
     public MultiStatusResult list(String url, int propfindType, int dep) throws IOException {
-        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         HttpPropfind propfind = new HttpPropfind(url, propfindType, dep);
         return webDavSupport.execute(propfind, new MultiStatusHandler());
     }
 
     /**
+     * 设置属性
+     *
+     * @param url - 网络路径
+     * @param propertySet - 设置属性
+     * @param removeProperties - 移除属性
+     * @return
+     * @throws IOException
+     */
+    public boolean proppatch(String url, Set<DavProperty<?>> propertySet, Set<DavPropertyName> removeProperties) throws IOException {
+        DavPropertySet setProperties = new DavPropertySet();
+        for (DavProperty<?> davProperty : propertySet) {
+            setProperties.add(davProperty);
+        }
+        DavPropertyNameSet removePropertyNameSet = new DavPropertyNameSet();
+        for (DavPropertyName davPropertyName : removeProperties) {
+            removePropertyNameSet.add(davPropertyName);
+        }
+        return proppatch(url, setProperties, removePropertyNameSet);
+    }
+
+    /**
+     * 设置属性
+     * 
+     * @param url - 网络路径
+     * @param setProperties - 设置属性
+     * @param removeProperties - 移除属性
+     * @return
+     * @throws IOException
+     */
+    public boolean proppatch(String url, DavPropertySet setProperties, DavPropertyNameSet removeProperties) throws IOException {
+        HttpProppatch httpProppatch = new HttpProppatch(url, setProperties, removeProperties);
+        return webDavSupport.execute(httpProppatch, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) throws ClientProtocolException, IOException {
+                this.validateResponse(httpResponse);
+                return httpProppatch.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
      * 获取支持的请求方法
+     * 
      * @param url - 网络路径
      * @return
      */
@@ -129,11 +173,11 @@ public class WebDavJackrabbitUtils implements InitializingBean {
 
     /**
      * 获取支持的请求方法
+     * 
      * @param url - 网络路径
      * @return
      */
     public Set<String> option(String url) throws IOException {
-        Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         HttpOptions httpOptions = new HttpOptions(url);
         HttpResponse response = webDavSupport.execute(httpOptions);
         Set<String> searchGrammars = httpOptions.getDavComplianceClasses(response);
@@ -237,6 +281,236 @@ public class WebDavJackrabbitUtils implements InitializingBean {
             public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
                 this.validateResponse(httpResponse);
                 return lockInfo.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
+     * 搜索文件
+     * 
+     * @param url - 网络路径
+     * @param language - 查询语言
+     * @param languageNamespace - 查询语言命名空间
+     * @param query - 查询语句
+     * @param namespaces - 命名空间
+     * @return
+     */
+    public MultiStatusResult search(String url, String language, Namespace languageNamespace, String query,
+        Map<String, String> namespaces) throws IOException {
+        SearchInfo searchInfo = new SearchInfo(language, languageNamespace, query, namespaces);
+        HttpSearch httpSearch = new HttpSearch(url, searchInfo);
+        MultiStatusResult execute = webDavSupport.execute(httpSearch, new MultiStatusHandler());
+        return execute;
+    }
+
+    /**
+     * 删除文件
+     *
+     * @param url
+     * @return
+     */
+    public boolean delete(String url) throws IOException {
+        HttpDelete httpDelete = new HttpDelete(url);
+        return webDavSupport.execute(httpDelete, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return httpDelete.succeeded(httpResponse);
+            }
+        });
+    }
+
+    public boolean update(String url, String[] updateSource, int updateType, DavPropertyName... davPropertyName) throws IOException {
+        DavPropertyNameSet davPropertyNames = new DavPropertyNameSet();
+        for (DavPropertyName propertyName : davPropertyName) {
+            davPropertyNames.add(propertyName);
+        }
+        UpdateInfo updateInfo = new UpdateInfo(updateSource, updateType, davPropertyNames);
+        HttpUpdate httpUpdate = new HttpUpdate(url, updateInfo);
+        return webDavSupport.execute(httpUpdate, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return httpUpdate.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
+     * 为资源打标签
+     * 
+     * @param url 资源路径
+     * @param labelName 标签名称
+     * @param type 标签类型
+     * TYPE_SET = 0;
+     * TYPE_REMOVE = 1;
+     * TYPE_ADD = 2;
+     * @param depth 0：只对当前资源打标签 1：对当前资源和子资源打标签
+     * @return
+     * @throws IOException
+     */
+    public boolean lable(String url, String labelName, int type, int depth) throws IOException {
+        LabelInfo labelInfo = new LabelInfo(labelName, type, depth);
+        HttpLabel httpLabel = new HttpLabel(url, labelInfo);
+        return webDavSupport.execute(httpLabel, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return httpLabel.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
+     * 报告
+     * 
+     * @param url 资源路径
+     * @param typelocalName 报告类型 {@link ReportType}
+     * @param typeNamespace
+     * @param depth
+     * @param davPropertyName
+     * @return
+     * @throws IOException
+     */
+    public boolean report(String url, String typelocalName, Namespace typeNamespace, int depth, DavPropertyName... davPropertyName)
+        throws IOException {
+        DavPropertyNameSet propertyNames = new DavPropertyNameSet();
+        for (DavPropertyName propertyName : davPropertyName) {
+            propertyNames.add(propertyName);
+        }
+        ReportInfo reportInfo = new ReportInfo(typelocalName, typeNamespace, depth, propertyNames);
+        HttpReport httpReport = new HttpReport(url, reportInfo);
+        return webDavSupport.execute(httpReport, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return httpReport.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
+     * 订阅
+     * 
+     * @param url - 网络路径
+     * @param eventTypes - 事件类型
+     * @param filters - 过滤器
+     * @param noLocal - 是否本地
+     * @param isDeep - 是否深度
+     * @param timeout - 超时时间
+     * @param subscriptionId - 订阅ID
+     * @return
+     * @throws IOException
+     */
+    public boolean subScribe(String url, EventType[] eventTypes, Filter[] filters, boolean noLocal, boolean isDeep, long timeout,
+        String subscriptionId) throws IOException {
+        SubscriptionInfo subscriptionInfo = new SubscriptionInfo(eventTypes, filters, noLocal, isDeep, timeout);
+        return subScribe(url, subscriptionInfo, subscriptionId);
+    }
+
+    /**
+     * 订阅
+     *
+     * @param url
+     * @return
+     */
+    public boolean subScribe(String url, SubscriptionInfo info, String subscriptionId) throws IOException {
+        HttpSubscribe httpSubscribe = new HttpSubscribe(url, info, subscriptionId);
+        return webDavSupport.execute(httpSubscribe, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return httpSubscribe.succeeded(httpResponse);
+            }
+        });
+    }
+
+    public boolean unSubScribe(String url, String subscriptionId) throws IOException {
+        HttpUnsubscribe unsubscribe = new HttpUnsubscribe(url, subscriptionId);
+        return webDavSupport.execute(unsubscribe, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) {
+                this.validateResponse(httpResponse);
+                return unsubscribe.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
+     * 创建虚拟工作区 #checkIn #checkOout
+     * 
+     * @see <a href="http://webdav.org/specs/rfc3253.html#rfc.section.6.3">RFC 3253, Section 6.3</a>
+     * @param url
+     * @return
+     * @throws IOException
+     */
+    public boolean mkworkspace(String url) throws IOException {
+        HttpMkworkspace mkworkspace = new HttpMkworkspace(url);
+        return webDavSupport.execute(mkworkspace, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
+                this.validateResponse(httpResponse);
+                return mkworkspace.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
+     * 版本控制
+     * 
+     * @see <a href="http://webdav.org/specs/rfc3253.html#rfc.section.3.5">RFC 3253, Section 3.5</a>
+     * @param url
+     * @return
+     * @throws IOException
+     */
+    public boolean versionControl(String url) throws IOException {
+        HttpVersionControl versionControl = new HttpVersionControl(url);
+        return webDavSupport.execute(versionControl, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
+                this.validateResponse(httpResponse);
+                return versionControl.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
+     * BIND 方法通过添加从 BIND 主体中指定的段到 BIND 主体中标识的资源的新绑定来修改 Request-URI 标识的集合
+     * 
+     * @param url - 网络路径
+     * @param href - 资源路径 相对路径
+     * @param segment - 资源名称
+     * @see <a href="http://webdav.org/specs/rfc5842.html#rfc.section.4">RFC 5842, Section 4</a>*
+     * @return
+     * @throws IOException
+     */
+    public boolean bind(String url, String href, String segment) throws IOException {
+        BindInfo bindInfo = new BindInfo(href, segment);
+        HttpBind httpBind = new HttpBind(url, bindInfo);
+        return webDavSupport.execute(httpBind, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
+                this.validateResponse(httpResponse);
+                return httpBind.succeeded(httpResponse);
+            }
+        });
+    }
+
+    /**
+     * UNBIND 方法通过从 Request-URI 标识的集合中删除指定的段来修改 Request-URI 标识的集合
+     * @param url - 网络路径
+     * @param segment - 资源名称
+     * @return
+     * @throws IOException
+     */
+    public boolean unBind(String url, String segment) throws IOException {
+        UnbindInfo unbindInfo = new UnbindInfo(segment);
+        HttpUnbind httpBind = new HttpUnbind(url, unbindInfo);
+        return webDavSupport.execute(httpBind, new ValidatingResponseHandler<Boolean>() {
+            @Override
+            public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
+                this.validateResponse(httpResponse);
+                return httpBind.succeeded(httpResponse);
             }
         });
     }
