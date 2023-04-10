@@ -88,10 +88,8 @@ public class WebDavTest extends BaseTest {
 
     @Test
     public void test_list() {
-        MultiStatusResult list = webDavUtils.listPropfindAllPropInclude(SCOPE_PATH + "images", Integer.MAX_VALUE);
-        JSONObject jsonObject = new JSONObject(list);
-        ResponseResult result = JSON.parseObject(jsonObject.toString(), ResponseResult.class);
-        System.out.println(JSON.toJSONString(result));
+        ResponseResult list = webDavUtils.listResult(webDavSupport.getBasePath(), 1);
+        System.out.println(JSON.toJSONString(list));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package io.github.lunasaw.webdav.request;
 
+import com.alibaba.fastjson2.JSON;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
@@ -16,6 +17,7 @@ import com.luna.common.utils.Assert;
 import com.luna.common.utils.ObjectUtils;
 import io.github.lunasaw.webdav.WebDavSupport;
 import io.github.lunasaw.webdav.entity.MultiStatusResult;
+import io.github.lunasaw.webdav.entity.ResponseResult;
 import io.github.lunasaw.webdav.hander.MultiStatusHandler;
 import io.github.lunasaw.webdav.properties.WebDavConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,7 @@ import org.apache.jackrabbit.webdav.lock.Scope;
 import org.apache.jackrabbit.webdav.lock.Type;
 import org.apache.jackrabbit.webdav.search.SearchInfo;
 import org.apache.jackrabbit.webdav.xml.Namespace;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -384,6 +387,18 @@ public class WebDavUtils {
 
     public String lockShare(String url) {
         return lockShare(url, null, Integer.MAX_VALUE, true);
+    }
+
+    /**
+     * 返回解析后的结果
+     * @param url
+     * @param dep
+     * @return
+     */
+    public ResponseResult listResult(String url, int dep) {
+        MultiStatusResult multiStatusResult = listAllProp(url, dep);
+        JSONObject jsonObject = new JSONObject(multiStatusResult);
+        return JSON.parseObject(jsonObject.toString(), ResponseResult.class);
     }
 
     /**

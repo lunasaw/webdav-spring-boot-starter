@@ -23,7 +23,6 @@ public class ResponseResult {
         private String             xmlnsNs0;
     }
 
-
     @Data
     public static class LockScope {
         private String shared;
@@ -33,27 +32,16 @@ public class ResponseResult {
     @Data
     public static class LockEntryItem {
         private LockScope lockScope;
-        private Locktype  locktype;
+        private LockType  locktype;
     }
 
     @Data
-    public static class DLocktype {
+    public static class LockType {
         private String write;
     }
 
     @Data
-    public static class DLockScope {
-        private String shared;
-        private String exclusive;
-    }
-
-    @Data
-    public static class Locktype {
-        private String write;
-    }
-
-    @Data
-    public static class Propstat {
+    public static class PropStat {
         private Prop   prop;
         private String dStatus;
     }
@@ -67,7 +55,7 @@ public class ResponseResult {
     public static class ResponseItem {
         private String   xmlnsLp2;
         private String   xmlnsLp1;
-        private Propstat propstat;
+        private PropStat propstat;
         private String   href;
     }
 
@@ -101,9 +89,8 @@ public class ResponseResult {
         }
 
         public void setGetLastModified(String getLastModified) {
-            String dateString = "Thu, 06 Apr 2023 08:42:08 UTC";
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH);
-            ZonedDateTime zonedDateTime = ZonedDateTime.parse(dateString, formatter);
+            ZonedDateTime zonedDateTime = ZonedDateTime.parse(getLastModified, formatter);
             long timestamp = zonedDateTime.toInstant().toEpochMilli();
             this.getLastModified = timestamp;
         }
