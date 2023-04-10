@@ -18,60 +18,60 @@ public class PropResult {
     public static class Prop {
 
         @JSONField(name = "D:lockdiscovery")
-        private Lockdiscovery   lockdiscovery;
+        private Lockdiscovery lockdiscovery;
 
         @JSONField(name = "xmlns:D")
-        private String          xmlnsD;
+        private String        xmlnsD;
 
         @JSONField(name = "lp1:creationdate")
-        private String          creationDate;
+        private String        creationDate;
 
         @JSONField(name = "lp1:resourcetype")
-        private Lp1Resourcetype resourceType;
+        private ResourceType  resourceType;
 
         @JSONField(name = "D:supportedlock")
-        private Supportedlock   supportedLock;
+        private SupportedLock supportedLock;
 
         @JSONField(name = "lp1:getetag")
-        private String          geteTag;
+        private String        getTag;
 
         @JSONField(name = "lp1:getlastmodified")
-        private String          getLastModified;
+        private String        getLastModified;
 
         @JSONField(name = "lp1:getcontentlength")
-        private String          getContentLength;
+        private String        getContentLength;
 
         @JSONField(name = "lp2:executable")
-        private String          executable;
+        private String        executable;
 
         @JSONField(name = "D:getcontenttype")
-        private String          getContentType;
+        private String        getContentType;
 
         @JSONField(name = "D:lockdiscovery")
-        private String          lockDiscovery;
+        private String        lockDiscovery;
     }
 
     @Data
     public static class Lockdiscovery {
 
         @JSONField(name = "D:activelock")
-        private ActiveLock activelock;
+        private ActiveLock activeLock;
     }
 
     @Data
     public static class ActiveLock {
 
         @JSONField(name = "ns0:owner")
-        private Ns0Owner  ns0Owner;
+        private NsOwner   nsOwner;
 
         @JSONField(name = "D:locktoken")
-        private Locktoken locktoken;
+        private LockToken locktoken;
 
         @JSONField(name = "D:locktype")
-        private Locktype  locktype;
+        private Locktype  lockType;
 
         @JSONField(name = "D:lockscope")
-        private Lockscope lockscope;
+        private LockScope lockScope;
 
         @JSONField(name = "D:timeout")
         private String    timeout;
@@ -81,18 +81,17 @@ public class PropResult {
     }
 
     @Data
-    public static class Lockscope {
+    public static class LockScope {
 
         @JSONField(name = "D:exclusive")
         private String exclusive;
-
 
         @JSONField(name = "D:shared")
         private String shared;
     }
 
     @Data
-    public static class Locktoken {
+    public static class LockToken {
 
         @JSONField(name = "D:href")
         private List<String> href;
@@ -106,33 +105,33 @@ public class PropResult {
     }
 
     @Data
-    public class Ns0Owner {
+    public class NsOwner {
 
         @JSONField(name = "xmlns:ns0")
         private String xmlnsNs0;
     }
 
     @Data
-    public class Supportedlock {
+    public class SupportedLock {
 
         @JSONField(name = "D:lockentry")
-        private List<LockentryItem> lockentry;
+        private List<LockEntryItem> lockEntry;
     }
 
     @Data
-    public class Lp1Resourcetype {
+    public class ResourceType {
 
         @JSONField(name = "D:collection")
         private String collection;
     }
 
     @Data
-    public class LockentryItem {
+    public class LockEntryItem {
 
         @JSONField(name = "D:lockscope")
-        private Lockscope dLockscope;
+        private LockScope lockScope;
 
         @JSONField(name = "D:locktype")
-        private Locktype  dLocktype;
+        private Locktype  locktype;
     }
 }

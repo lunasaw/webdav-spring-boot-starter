@@ -7,7 +7,7 @@ import com.luna.common.text.StringTools;
 import com.luna.common.utils.Assert;
 import io.github.lunasaw.webdav.WebDavSupport;
 import io.github.lunasaw.webdav.entity.MultiStatusResult;
-import io.github.lunasaw.webdav.request.WebDavJackrabbitUtils;
+import io.github.lunasaw.webdav.entity.ResponseResult;
 import io.github.lunasaw.webdav.request.WebDavUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -21,9 +21,6 @@ import org.springframework.util.ResourceUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -93,7 +90,8 @@ public class WebDavTest extends BaseTest {
     public void test_list() {
         MultiStatusResult list = webDavUtils.listPropfindAllPropInclude(SCOPE_PATH + "images", Integer.MAX_VALUE);
         JSONObject jsonObject = new JSONObject(list);
-        System.out.println(jsonObject);
+        ResponseResult result = JSON.parseObject(jsonObject.toString(), ResponseResult.class);
+        System.out.println(JSON.toJSONString(result));
     }
 
     @Test

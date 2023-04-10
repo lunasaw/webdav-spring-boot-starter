@@ -96,7 +96,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      */
     public boolean exist(String url) throws IOException {
         MultiStatusResult list = list(url, DavConstants.PROPFIND_BY_PROPERTY, Constant.NUMBER_ONE);
-        return Optional.ofNullable(list.getMultistatus()).map(MultiStatusResult.Multistatus::getResponse).map(CollectionUtils::isNotEmpty)
+        return Optional.ofNullable(list.getMultiStatus()).map(MultiStatusResult.Multistatus::getResponse).map(CollectionUtils::isNotEmpty)
             .orElse(false);
     }
 

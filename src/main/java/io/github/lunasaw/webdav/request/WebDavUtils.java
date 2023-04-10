@@ -440,7 +440,7 @@ public class WebDavUtils {
      * @return - 文件名列表
      */
     public List<String> listFileName(String url, int dep) {
-        return Optional.ofNullable(list(url, dep)).map(MultiStatusResult::getMultistatus).map(MultiStatusResult.Multistatus::getResponse)
+        return Optional.ofNullable(list(url, dep)).map(MultiStatusResult::getMultiStatus).map(MultiStatusResult.Multistatus::getResponse)
             .map(e -> e.stream().map(MultiStatusResult.ResponseItem::getHref).collect(Collectors.toList())).orElse(Lists.newArrayList());
     }
 
