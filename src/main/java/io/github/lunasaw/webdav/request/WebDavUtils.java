@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.jackrabbit.webdav.DavConstants;
+import org.apache.jackrabbit.webdav.DavResource;
 import org.apache.jackrabbit.webdav.client.methods.HttpOptions;
 import org.apache.jackrabbit.webdav.client.methods.HttpSearch;
 import org.apache.jackrabbit.webdav.lock.Scope;
@@ -32,9 +33,11 @@ import org.apache.jackrabbit.webdav.xml.Namespace;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.xml.ws.Response;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -367,6 +370,22 @@ public class WebDavUtils {
         return lock(url, Scope.SHARED, type, owner, timeout, isDeep);
     }
 
+    public String lockShare(String url, String owner, long timeout, boolean isDeep) {
+        return lockShare(url, Type.WRITE, owner, timeout, isDeep);
+    }
+
+    public String lockShare(String url, String owner, long timeout) {
+        return lockShare(url, Type.WRITE, owner, timeout, true);
+    }
+
+    public String lockShare(String url, String owner) {
+        return lockShare(url, Type.WRITE, owner, Integer.MAX_VALUE, true);
+    }
+
+    public String lockShare(String url) {
+        return lockShare(url, null, Integer.MAX_VALUE, true);
+    }
+
     /**
      * 返回所有属性信息
      * 
@@ -423,6 +442,14 @@ public class WebDavUtils {
     public List<String> listFileName(String url, int dep) {
         return Optional.ofNullable(list(url, dep)).map(MultiStatusResult::getMultistatus).map(MultiStatusResult.Multistatus::getResponse)
             .map(e -> e.stream().map(MultiStatusResult.ResponseItem::getHref).collect(Collectors.toList())).orElse(Lists.newArrayList());
+    }
+
+    public List<String> listFileName(String url) {
+        return listFileName(url, 1);
+    }
+
+    public List<String> listFileNameAll(String url) {
+        return listFileName(url, Integer.MAX_VALUE);
     }
 
     // =============================================以下是基础方法================================================

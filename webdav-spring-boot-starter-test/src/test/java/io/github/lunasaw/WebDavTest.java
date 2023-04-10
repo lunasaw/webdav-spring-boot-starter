@@ -6,12 +6,14 @@ import com.luna.common.io.IoUtil;
 import com.luna.common.text.StringTools;
 import com.luna.common.utils.Assert;
 import io.github.lunasaw.webdav.WebDavSupport;
+import io.github.lunasaw.webdav.entity.MultiStatusResult;
 import io.github.lunasaw.webdav.request.WebDavJackrabbitUtils;
 import io.github.lunasaw.webdav.request.WebDavUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,9 +90,10 @@ public class WebDavTest extends BaseTest {
     }
 
     @Test
-    public void exist_list() {
-        List<String> list = webDavUtils.listFileName(SCOPE_PATH + "images", Integer.MAX_VALUE);
-        System.out.println(JSON.toJSONString(list));
+    public void test_list() {
+        MultiStatusResult list = webDavUtils.listPropfindAllPropInclude(SCOPE_PATH + "images", Integer.MAX_VALUE);
+        JSONObject jsonObject = new JSONObject(list);
+        System.out.println(jsonObject);
     }
 
     @Test
@@ -130,6 +133,12 @@ public class WebDavTest extends BaseTest {
         assertFalse(webDavUtils.delete(url));
         assertTrue(webDavUtils.unLock(url, token));
         assertTrue(webDavUtils.delete(url));
+    }
+
+    @Test
+    public void delete_test() {
+        boolean delete = webDavUtils.delete("http://127.0.0.1:8080/webdav/project/test/55/");
+        assertTrue(delete);
     }
 
     @Test

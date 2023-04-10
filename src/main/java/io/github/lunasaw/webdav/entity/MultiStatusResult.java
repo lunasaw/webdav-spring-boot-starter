@@ -39,6 +39,12 @@ public class MultiStatusResult {
         @JSONField(name = "D:propstat")
         private Propstat propstat;
 
+        @JSONField(name = "xmlns:lp1")
+        private String   xmlnsLp1;
+
+        @JSONField(name = "xmlns:lp2")
+        private String   xmlnsLp2;
+
     }
 
     @Data
@@ -48,7 +54,7 @@ public class MultiStatusResult {
         private PropResult.Prop prop;
 
         @JSONField(name = "D:status")
-        private String dStatus;
+        private String          dStatus;
     }
 
 }

@@ -24,33 +24,42 @@ public class PropResult {
         private String          xmlnsD;
 
         @JSONField(name = "lp1:creationdate")
-        private String          creationdate;
+        private String          creationDate;
 
         @JSONField(name = "lp1:resourcetype")
-        private Lp1Resourcetype resourcetype;
+        private Lp1Resourcetype resourceType;
 
         @JSONField(name = "D:supportedlock")
-        private Supportedlock  supportedlock;
+        private Supportedlock   supportedLock;
 
         @JSONField(name = "lp1:getetag")
-        private String          getetag;
+        private String          geteTag;
 
         @JSONField(name = "lp1:getlastmodified")
-        private String          getlastmodified;
+        private String          getLastModified;
+
+        @JSONField(name = "lp1:getcontentlength")
+        private String          getContentLength;
+
+        @JSONField(name = "lp2:executable")
+        private String          executable;
 
         @JSONField(name = "D:getcontenttype")
-        private String          getcontenttype;
+        private String          getContentType;
+
+        @JSONField(name = "D:lockdiscovery")
+        private String          lockDiscovery;
     }
 
     @Data
     public static class Lockdiscovery {
 
         @JSONField(name = "D:activelock")
-        private Activelock activelock;
+        private ActiveLock activelock;
     }
 
     @Data
-    public static class Activelock {
+    public static class ActiveLock {
 
         @JSONField(name = "ns0:owner")
         private Ns0Owner  ns0Owner;
@@ -75,7 +84,11 @@ public class PropResult {
     public static class Lockscope {
 
         @JSONField(name = "D:exclusive")
-        private String dExclusive;
+        private String exclusive;
+
+
+        @JSONField(name = "D:shared")
+        private String shared;
     }
 
     @Data
@@ -100,25 +113,26 @@ public class PropResult {
     }
 
     @Data
-    public class Supportedlock{
+    public class Supportedlock {
 
-        @JSONField(name="D:lockentry")
+        @JSONField(name = "D:lockentry")
         private List<LockentryItem> lockentry;
     }
 
-    public class Lp1Resourcetype{
+    @Data
+    public class Lp1Resourcetype {
 
-        @JSONField(name="D:collection")
+        @JSONField(name = "D:collection")
         private String collection;
     }
 
     @Data
-    public class LockentryItem{
+    public class LockentryItem {
 
-        @JSONField(name="D:lockscope")
+        @JSONField(name = "D:lockscope")
         private Lockscope dLockscope;
 
-        @JSONField(name="D:locktype")
-        private Locktype dLocktype;
+        @JSONField(name = "D:locktype")
+        private Locktype  dLocktype;
     }
 }
