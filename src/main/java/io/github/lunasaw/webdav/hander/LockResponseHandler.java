@@ -65,6 +65,6 @@ public class LockResponseHandler extends ValidatingResponseHandler<String> {
         String read = IoUtil.read(stream, Charset.defaultCharset());
         JSONObject jsonObject = XML.toJSONObject(read);
         PropResult propResult = JSON.parseObject(jsonObject.toString(), PropResult.class);
-        return propResult.getProp().getLockdiscovery().getActivelock().getLocktoken().getHref().iterator().next();
+        return propResult.getProp().getLockdiscovery().getActiveLock().getLocktoken().getHref().iterator().next();
     }
 }

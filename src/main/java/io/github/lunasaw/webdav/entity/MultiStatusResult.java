@@ -14,7 +14,7 @@ import java.util.List;
 public class MultiStatusResult {
 
     @JSONField(name = "D:multistatus")
-    private Multistatus multistatus;
+    private Multistatus multiStatus;
 
     @Data
     public static class Multistatus {
@@ -37,18 +37,24 @@ public class MultiStatusResult {
         private String   href;
 
         @JSONField(name = "D:propstat")
-        private Propstat propstat;
+        private PropStat propstat;
+
+        @JSONField(name = "xmlns:lp1")
+        private String   xmlnsLp1;
+
+        @JSONField(name = "xmlns:lp2")
+        private String   xmlnsLp2;
 
     }
 
     @Data
-    public static class Propstat {
+    public static class PropStat {
 
         @JSONField(name = "D:prop")
         private PropResult.Prop prop;
 
         @JSONField(name = "D:status")
-        private String dStatus;
+        private String          dStatus;
     }
 
 }
