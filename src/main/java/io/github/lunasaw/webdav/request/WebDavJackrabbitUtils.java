@@ -7,9 +7,7 @@ import com.luna.common.constant.StrPoolConstant;
 import com.luna.common.utils.Assert;
 import io.github.lunasaw.webdav.WebDavSupport;
 import io.github.lunasaw.webdav.entity.MultiStatusResult;
-import io.github.lunasaw.webdav.hander.LockResponseHandler;
-import io.github.lunasaw.webdav.hander.MultiStatusHandler;
-import io.github.lunasaw.webdav.hander.ValidatingResponseHandler;
+import io.github.lunasaw.webdav.hander.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -59,15 +57,9 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         exist(webDavSupport.getBasePath());
     }
 
-    public void move(String url, String dest, boolean overwrite) throws IOException {
+    public boolean move(String url, String dest, boolean overwrite) throws IOException {
         HttpMove httpMove = new HttpMove(url, dest, overwrite);
-        webDavSupport.execute(httpMove, new ValidatingResponseHandler<Void>() {
-            @Override
-            public Void handleResponse(HttpResponse httpResponse) {
-                this.validateResponse(httpResponse);
-                return null;
-            }
-        });
+        return webDavSupport.execute(httpMove, new BooleanResponseHandler(httpMove));
     }
 
     /**
@@ -78,14 +70,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      */
     public boolean mkdir(String url) throws IOException {
         HttpMkcol mkcol = new HttpMkcol(url);
-        HttpResponse response = webDavSupport.execute(mkcol, new ValidatingResponseHandler<HttpResponse>() {
-            @Override
-            public HttpResponse handleResponse(HttpResponse httpResponse) {
-                this.validateResponse(httpResponse);
-                return httpResponse;
-            }
-        });
-        return mkcol.succeeded(response);
+        return webDavSupport.execute(mkcol, new BooleanResponseHandler(mkcol));
     }
 
     /**
@@ -146,13 +131,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      */
     public boolean proppatch(String url, DavPropertySet setProperties, DavPropertyNameSet removeProperties) throws IOException {
         HttpProppatch httpProppatch = new HttpProppatch(url, setProperties, removeProperties);
-        return webDavSupport.execute(httpProppatch, new ValidatingResponseHandler<Boolean>() {
-            @Override
-            public Boolean handleResponse(HttpResponse httpResponse) throws ClientProtocolException, IOException {
-                this.validateResponse(httpResponse);
-                return httpProppatch.succeeded(httpResponse);
-            }
-        });
+        return webDavSupport.execute(httpProppatch, new BooleanResponseHandler(httpProppatch));
     }
 
     /**
@@ -195,13 +174,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      */
     public void copy(String url, String dest, boolean overwrite, boolean shallow) throws IOException {
         HttpCopy httpCopy = new HttpCopy(url, dest, overwrite, shallow);
-        webDavSupport.execute(httpCopy, new ValidatingResponseHandler<Void>() {
-            @Override
-            public Void handleResponse(HttpResponse httpResponse) throws IOException {
-                this.validateResponse(httpResponse);
-                return null;
-            }
-        });
+        webDavSupport.execute(httpCopy, new VoidResponseHandler());
     }
 
     /**
@@ -276,13 +249,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      */
     public boolean unLock(String url, String lockToken) throws IOException {
         HttpUnlock lockInfo = new HttpUnlock(url, lockToken);
-        return webDavSupport.execute(lockInfo, new ValidatingResponseHandler<Boolean>() {
-            @Override
-            public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
-                this.validateResponse(httpResponse);
-                return lockInfo.succeeded(httpResponse);
-            }
-        });
+        return webDavSupport.execute(lockInfo, new BooleanResponseHandler(lockInfo));
     }
 
     /**
@@ -311,13 +278,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      */
     public boolean delete(String url) throws IOException {
         HttpDelete httpDelete = new HttpDelete(url);
-        return webDavSupport.execute(httpDelete, new ValidatingResponseHandler<Boolean>() {
-            @Override
-            public Boolean handleResponse(HttpResponse httpResponse) {
-                this.validateResponse(httpResponse);
-                return httpDelete.succeeded(httpResponse);
-            }
-        });
+        return webDavSupport.execute(httpDelete, new BooleanResponseHandler(httpDelete));
     }
 
     public boolean update(String url, String[] updateSource, int updateType, DavPropertyName... davPropertyName) throws IOException {
@@ -327,13 +288,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         }
         UpdateInfo updateInfo = new UpdateInfo(updateSource, updateType, davPropertyNames);
         HttpUpdate httpUpdate = new HttpUpdate(url, updateInfo);
-        return webDavSupport.execute(httpUpdate, new ValidatingResponseHandler<Boolean>() {
-            @Override
-            public Boolean handleResponse(HttpResponse httpResponse) {
-                this.validateResponse(httpResponse);
-                return httpUpdate.succeeded(httpResponse);
-            }
-        });
+        return webDavSupport.execute(httpUpdate, new BooleanResponseHandler(httpUpdate));
     }
 
     /**
@@ -352,13 +307,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
     public boolean lable(String url, String labelName, int type, int depth) throws IOException {
         LabelInfo labelInfo = new LabelInfo(labelName, type, depth);
         HttpLabel httpLabel = new HttpLabel(url, labelInfo);
-        return webDavSupport.execute(httpLabel, new ValidatingResponseHandler<Boolean>() {
-            @Override
-            public Boolean handleResponse(HttpResponse httpResponse) {
-                this.validateResponse(httpResponse);
-                return httpLabel.succeeded(httpResponse);
-            }
-        });
+        return webDavSupport.execute(httpLabel, new BooleanResponseHandler(httpLabel));
     }
 
     /**
@@ -380,13 +329,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
         }
         ReportInfo reportInfo = new ReportInfo(typelocalName, typeNamespace, depth, propertyNames);
         HttpReport httpReport = new HttpReport(url, reportInfo);
-        return webDavSupport.execute(httpReport, new ValidatingResponseHandler<Boolean>() {
-            @Override
-            public Boolean handleResponse(HttpResponse httpResponse) {
-                this.validateResponse(httpResponse);
-                return httpReport.succeeded(httpResponse);
-            }
-        });
+        return webDavSupport.execute(httpReport, new BooleanResponseHandler(httpReport));
     }
 
     /**
@@ -416,24 +359,12 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      */
     public boolean subScribe(String url, SubscriptionInfo info, String subscriptionId) throws IOException {
         HttpSubscribe httpSubscribe = new HttpSubscribe(url, info, subscriptionId);
-        return webDavSupport.execute(httpSubscribe, new ValidatingResponseHandler<Boolean>() {
-            @Override
-            public Boolean handleResponse(HttpResponse httpResponse) {
-                this.validateResponse(httpResponse);
-                return httpSubscribe.succeeded(httpResponse);
-            }
-        });
+        return webDavSupport.execute(httpSubscribe, new BooleanResponseHandler(httpSubscribe));
     }
 
     public boolean unSubScribe(String url, String subscriptionId) throws IOException {
         HttpUnsubscribe unsubscribe = new HttpUnsubscribe(url, subscriptionId);
-        return webDavSupport.execute(unsubscribe, new ValidatingResponseHandler<Boolean>() {
-            @Override
-            public Boolean handleResponse(HttpResponse httpResponse) {
-                this.validateResponse(httpResponse);
-                return unsubscribe.succeeded(httpResponse);
-            }
-        });
+        return webDavSupport.execute(unsubscribe, new BooleanResponseHandler(unsubscribe));
     }
 
     /**
@@ -446,13 +377,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      */
     public boolean mkworkspace(String url) throws IOException {
         HttpMkworkspace mkworkspace = new HttpMkworkspace(url);
-        return webDavSupport.execute(mkworkspace, new ValidatingResponseHandler<Boolean>() {
-            @Override
-            public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
-                this.validateResponse(httpResponse);
-                return mkworkspace.succeeded(httpResponse);
-            }
-        });
+        return webDavSupport.execute(mkworkspace, new BooleanResponseHandler(mkworkspace));
     }
 
     /**
@@ -465,13 +390,7 @@ public class WebDavJackrabbitUtils implements InitializingBean {
      */
     public boolean versionControl(String url) throws IOException {
         HttpVersionControl versionControl = new HttpVersionControl(url);
-        return webDavSupport.execute(versionControl, new ValidatingResponseHandler<Boolean>() {
-            @Override
-            public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
-                this.validateResponse(httpResponse);
-                return versionControl.succeeded(httpResponse);
-            }
-        });
+        return webDavSupport.execute(versionControl, new BooleanResponseHandler(versionControl));
     }
 
     /**
@@ -487,17 +406,12 @@ public class WebDavJackrabbitUtils implements InitializingBean {
     public boolean bind(String url, String href, String segment) throws IOException {
         BindInfo bindInfo = new BindInfo(href, segment);
         HttpBind httpBind = new HttpBind(url, bindInfo);
-        return webDavSupport.execute(httpBind, new ValidatingResponseHandler<Boolean>() {
-            @Override
-            public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
-                this.validateResponse(httpResponse);
-                return httpBind.succeeded(httpResponse);
-            }
-        });
+        return webDavSupport.execute(httpBind, new BooleanResponseHandler(httpBind));
     }
 
     /**
      * UNBIND 方法通过从 Request-URI 标识的集合中删除指定的段来修改 Request-URI 标识的集合
+     * 
      * @param url - 网络路径
      * @param segment - 资源名称
      * @return
@@ -506,12 +420,6 @@ public class WebDavJackrabbitUtils implements InitializingBean {
     public boolean unBind(String url, String segment) throws IOException {
         UnbindInfo unbindInfo = new UnbindInfo(segment);
         HttpUnbind httpBind = new HttpUnbind(url, unbindInfo);
-        return webDavSupport.execute(httpBind, new ValidatingResponseHandler<Boolean>() {
-            @Override
-            public Boolean handleResponse(HttpResponse httpResponse) throws IOException {
-                this.validateResponse(httpResponse);
-                return httpBind.succeeded(httpResponse);
-            }
-        });
+        return webDavSupport.execute(httpBind, new BooleanResponseHandler(httpBind));
     }
 }

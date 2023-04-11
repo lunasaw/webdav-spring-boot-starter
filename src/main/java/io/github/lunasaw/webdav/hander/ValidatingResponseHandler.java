@@ -25,6 +25,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.ResponseHandler;
+import org.apache.jackrabbit.webdav.client.methods.BaseDavRequest;
 import org.springframework.stereotype.Component;
 
 

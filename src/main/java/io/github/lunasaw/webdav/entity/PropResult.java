@@ -7,6 +7,7 @@ import java.util.List;
 
 /**
  * @author weidian
+ * @description 直接序列化返回值
  */
 @Data
 public class PropResult {

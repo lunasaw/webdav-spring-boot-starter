@@ -6,6 +6,7 @@ import com.luna.common.utils.Assert;
 import io.github.lunasaw.webdav.WebDavSupport;
 import io.github.lunasaw.webdav.hander.DownloadHandler;
 import io.github.lunasaw.webdav.hander.ValidatingResponseHandler;
+import io.github.lunasaw.webdav.hander.VoidResponseHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
@@ -36,13 +37,7 @@ public class WebDavBaseUtils {
         Assert.isTrue(StringUtils.isNotBlank(url), "路径不能为空");
         try {
             HttpDelete delete = new HttpDelete(url);
-            webDavSupport.execute(delete, new ValidatingResponseHandler<Void>() {
-                @Override
-                public Void handleResponse(HttpResponse httpResponse) throws IOException {
-                    this.validateResponse(httpResponse);
-                    return null;
-                }
-            });
+            webDavSupport.execute(delete, new VoidResponseHandler());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -71,12 +66,6 @@ public class WebDavBaseUtils {
         HttpPut put = new HttpPut(url);
         InputStreamEntity requestEntity = new InputStreamEntity(fis);
         put.setEntity(requestEntity);
-        webDavSupport.execute(put, new ValidatingResponseHandler<Void>() {
-            @Override
-            public Void handleResponse(HttpResponse httpResponse) throws IOException {
-                this.validateResponse(httpResponse);
-                return null;
-            }
-        });
+        webDavSupport.execute(put, new VoidResponseHandler());
     }
 }
