@@ -35,7 +35,7 @@
         <dependency>
             <groupId>io.github.lunasaw</groupId>
             <artifactId>webdav-spring-boot-starter</artifactId>
-            <version>1.0.6</version>
+            <version>1.0.7</version>
         </dependency>
 
         <dependency>
