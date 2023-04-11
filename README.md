@@ -18,7 +18,7 @@
 </dependency>
 ```
 
-> [Api文档链接](https://lunasaw.github.io/webdav-spring-boot-starter/docs/)
+> [Api文档链接](https://lunasaw.github.io/webdav-spring-boot-starter/docs/){:target="_blank"}
 
 ## webdav-spring-boot-starter使用示例：
 
